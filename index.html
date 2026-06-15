@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Falcon Company · CRM</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg:#F2F5F8;
+  --surface:#FFFFFF;
+  --surface-alt:#EAF0F5;
+  --sidebar:#020617;
+  --sidebar-soft:#0E1D3A;
+  --sidebar-text:#A9B6CC;
+  --sidebar-text-active:#FFFFFF;
+  --accent:#0EA5FF;
+  --accent-dark:#2563EB;
+  --accent-soft:#E4F1FD;
+  --gold:#F0AC4D;
+  --text:#1C2433;
+  --text-muted:#76839A;
+  --border:#E1E7EE;
+  --danger:#E0584C;
+  --danger-soft:#FBE7E5;
+  --success:#2FAE63;
+  --success-soft:#E4F6EA;
+  --warn:#E0A23B;
+  --warn-soft:#FCF1DE;
+  --radius:10px;
+  --radius-lg:16px;
+  --font-display:'Sora', sans-serif;
+  --font-body:'Inter', sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:14px;}
+
+/* ===== LAYOUT ===== */
+.app{display:flex;min-height:100vh;}
+.sidebar{
+  width:230px;flex-shrink:0;background:var(--sidebar);
+  display:flex;flex-direction:column;padding:24px 16px;position:sticky;top:0;height:100vh;
+}
+.logo{display:flex;align-items:center;gap:10px;padding:0 8px 28px 8px;}
+.logo-mark{
+  width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;
+  color:#fff;font-size:18px;flex-shrink:0;
+}
+.logo-text{font-family:var(--font-display);font-weight:800;color:#fff;font-size:17px;letter-spacing:2px;line-height:1.1;}
+.logo-text span{display:block;font-family:var(--font-body);font-weight:500;color:var(--accent);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
+.nav{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;border:none;background:transparent;
+  color:var(--sidebar-text);font-size:14px;font-weight:600;text-align:left;transition:background .15s,color .15s;
+}
+.nav-item svg{flex-shrink:0;width:18px;height:18px;}
+.nav-item:hover{background:var(--sidebar-soft);color:#fff;}
+.nav-item.active{background:var(--accent);color:#fff;}
+.sidebar-footer{margin-top:auto;padding:14px 8px 4px;border-top:1px solid rgba(255,255,255,.08);}
+.sidebar-footer button{
+  width:100%;background:var(--sidebar-soft);color:var(--sidebar-text-active);border:none;border-radius:8px;
+  padding:9px;font-size:12.5px;font-weight:600;margin-bottom:8px;
+}
+.sidebar-footer button:hover{background:#26395E;}
+#sync-status{display:block;font-size:11px;color:var(--sidebar-text);text-align:center;}
+.sidebar-note{font-size:11px;color:var(--sidebar-text);text-align:center;margin-top:6px;line-height:1.5;opacity:.8;}
+
+#user-switcher{margin-bottom:10px;}
+#user-switcher label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--sidebar-text);font-weight:700;margin-bottom:5px;}
+#user-switcher select{
+  width:100%;padding:8px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.12);
+  background:var(--sidebar-soft);color:#fff;font-size:12.5px;font-weight:600;
+}
+#user-switcher select:focus{outline:2px solid var(--accent);}
+
+/* ===== PROGRESS BAR ===== */
+.progress-track{background:var(--surface-alt);border-radius:20px;height:8px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);border-radius:20px;transition:width .2s;}
+.progress-fill.risk{background:var(--warn);}
+.progress-fill.done{background:var(--success);}
+.progress-label{font-size:11.5px;color:var(--text-muted);font-weight:700;margin-top:6px;display:flex;justify-content:space-between;}
+
+/* ===== JORNADA DO CLIENTE ===== */
+.card-jornada{margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);cursor:pointer;}
+.card-jornada:hover .jornada-pill{filter:brightness(.96);}
+.card-jornada-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.jornada-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;}
+.jornada-pill .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.card-jornada-meta{font-size:11px;color:var(--text-muted);font-weight:700;white-space:nowrap;}
+.jornada-bar{display:flex;gap:3px;}
+.jseg{flex:1;height:6px;border-radius:4px;}
+.jornada-stepper{display:flex;gap:6px;margin-bottom:14px;}
+.jornada-seg{flex:1;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-family:var(--font-display);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.jornada-seg:hover{border-color:var(--c);color:var(--c);}
+.jornada-seg.past{background:var(--c);color:#fff;border-color:var(--c);opacity:.5;}
+.jornada-seg.current{background:var(--c);color:#fff;border-color:var(--c);box-shadow:0 5px 14px -5px var(--c);}
+.jornada-current-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:24px;font-size:13px;font-weight:700;background:var(--surface-alt);margin-bottom:16px;}
+.jornada-current-pill .dot{width:9px;height:9px;border-radius:50%;background:var(--c);}
+.jornada-fase{border:1px solid var(--border);border-left:4px solid var(--c);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--surface);}
+.jornada-fase.atual{box-shadow:0 0 0 1px var(--c) inset, 0 4px 16px rgba(20,30,60,.06);}
+.jornada-fase-head{display:flex;align-items:center;justify-content:space-between;}
+.jornada-fase-title{font-family:var(--font-display);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;}
+.jornada-fase-title .dot{width:9px;height:9px;border-radius:50%;}
+.jornada-fase-prog{font-size:12px;font-weight:800;color:var(--text-muted);}
+.jornada-fase-obj{font-size:12px;color:var(--text-muted);margin:4px 0 6px;}
+.jornada-atual-badge{margin-top:10px;font-size:12px;font-weight:800;color:var(--c);}
+
+/* filtro por fase (Clientes) */
+.jornada-filter{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+.jfilter{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:22px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12.5px;font-weight:700;transition:.15s;}
+.jfilter:hover{border-color:var(--c,var(--accent));}
+.jfilter.on{background:var(--c,var(--accent));color:#fff;border-color:var(--c,var(--accent));}
+.jfilter.on .jfilter-n{background:rgba(255,255,255,.25);color:#fff;}
+.jfilter-dot{width:8px;height:8px;border-radius:50%;}
+.jfilter.on .jfilter-dot{background:#fff!important;}
+.jfilter-n{background:var(--surface-alt);color:var(--text-muted);border-radius:20px;padding:1px 8px;font-size:11px;}
+
+/* tela de login */
+.auth-screen{position:fixed;inset:0;background:radial-gradient(900px 600px at 80% -10%,rgba(14,165,255,.18),transparent 60%),var(--sidebar);display:flex;align-items:center;justify-content:center;padding:20px;z-index:2000;}
+.auth-card{background:var(--surface);border-radius:var(--radius-lg);padding:30px 28px;width:100%;max-width:370px;box-shadow:0 24px 70px rgba(0,0,0,.4);}
+.auth-logo{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:20px;}
+.auth-brand{font-family:var(--font-display);font-weight:800;letter-spacing:2px;font-size:17px;color:var(--text);}
+.auth-brand span{font-weight:500;color:var(--accent-dark);}
+.auth-title{font-family:var(--font-display);font-weight:800;font-size:17px;text-align:center;margin-bottom:18px;}
+.auth-card .btn-primary{width:100%;justify-content:center;padding:11px;margin-top:4px;}
+.current-user-box{background:var(--sidebar-soft);border-radius:8px;padding:8px 11px;}
+.cu-name{color:#fff;font-weight:700;font-size:13px;line-height:1.2;}
+.cu-role{color:var(--accent);font-size:11px;font-weight:700;margin-top:2px;}
+
+/* ===== BADGES (prioridade / tags extras) ===== */
+.badge-prioridade-baixa{background:var(--surface-alt);color:var(--text-muted);}
+.badge-prioridade-media{background:var(--warn-soft);color:#9c6b1c;}
+.badge-prioridade-alta{background:var(--danger-soft);color:var(--danger);}
+.status-andamento{background:var(--accent-soft);color:var(--accent-dark);}
+.status-concluida{background:var(--success-soft);color:var(--success);}
+.status-risco{background:var(--warn-soft);color:#9c6b1c;}
+.status-cancelado{background:var(--danger-soft);color:var(--danger);}
+.checklist-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-weight:600;font-size:13.5px;cursor:pointer;}
+.checklist-row:last-of-type{border-bottom:none;}
+.checklist-row input{width:18px;height:18px;flex-shrink:0;}
+.checklist-row.done{color:var(--text-muted);text-decoration:line-through;}
+.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;}
+
+.main{flex:1;min-width:0;padding:28px 36px 60px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+.topbar h1{font-family:var(--font-display);font-size:24px;font-weight:800;margin:0;}
+#topbar-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+
+/* ===== BUTTONS ===== */
+.btn{
+  border:none;border-radius:8px;padding:9px 16px;font-size:13.5px;font-weight:700;
+  display:inline-flex;align-items:center;gap:6px;transition:opacity .15s, background .15s;white-space:nowrap;
+}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-dark);}
+.btn-secondary{background:var(--surface-alt);color:var(--text);}
+.btn-secondary:hover{background:#dbe4ec;}
+.btn-danger{background:var(--danger-soft);color:var(--danger);}
+.btn-danger:hover{background:var(--danger);color:#fff;}
+.btn-danger.confirm{background:var(--danger);color:#fff;}
+.btn-small{padding:6px 10px;font-size:12px;border-radius:6px;}
+.search-input{
+  padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);
+  font-size:13.5px;min-width:220px;
+}
+.search-input:focus{outline:2px solid var(--accent);border-color:transparent;}
+
+/* ===== ROTEIRO / STAGE LEGEND ===== */
+.roteiro-bar{
+  display:flex;align-items:flex-start;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:22px;overflow-x:auto;
+}
+.roteiro-step{flex:1;min-width:150px;padding:0 14px;}
+.roteiro-dot{width:12px;height:12px;border-radius:50%;margin-bottom:10px;}
+.roteiro-label{font-family:var(--font-display);font-weight:700;font-size:13px;margin-bottom:4px;}
+.roteiro-desc{font-size:11.5px;color:var(--text-muted);line-height:1.5;}
+.roteiro-line{flex:0 0 24px;height:1px;background:var(--border);margin-top:6px;}
+
+/* ===== KANBAN ===== */
+.kanban{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;align-items:flex-start;}
+.kanban-col{background:var(--surface-alt);border-radius:var(--radius-lg);min-width:270px;max-width:270px;flex-shrink:0;display:flex;flex-direction:column;max-height:calc(100vh - 280px);}
+.kanban-col-header{
+  display:flex;justify-content:space-between;align-items:center;padding:13px 14px;font-family:var(--font-display);
+  font-weight:700;font-size:13px;border-top:4px solid;border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+}
+.kanban-col-header .count{background:rgba(0,0,0,.06);border-radius:20px;padding:2px 9px;font-size:12px;font-weight:700;}
+.kanban-col-body{padding:6px 10px 12px;overflow-y:auto;flex:1;min-height:60px;}
+.kanban-col-body.drag-over{background:var(--accent-soft);border-radius:8px;}
+.empty-col{color:var(--text-muted);font-size:12.5px;text-align:center;padding:18px 6px;}
+
+.lead-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 13px;
+  margin-bottom:8px;cursor:grab;transition:box-shadow .15s, border-color .15s;
+}
+.lead-card:hover{box-shadow:0 4px 14px rgba(20,30,60,.08);border-color:var(--accent);}
+.lead-card:active{cursor:grabbing;}
+.lead-clinic{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+.lead-name{font-family:var(--font-display);font-weight:700;font-size:14.5px;margin:3px 0 5px;}
+.lead-meta{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;}
+.lead-meta .dot{opacity:.5;}
+.lead-footer{margin-top:8px;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-invest{background:var(--accent-soft);color:var(--accent-dark);}
+
+/* ===== GRID / CARDS (Clientes, Equipe) ===== */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.client-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;cursor:pointer;
+  transition:box-shadow .15s, border-color .15s;
+}
+.client-card:hover{box-shadow:0 6px 18px rgba(20,30,60,.08);border-color:var(--accent);}
+.client-card .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.client-card .clinic-name{font-family:var(--font-display);font-weight:800;font-size:15.5px;}
+.client-card .dentist-name{color:var(--text-muted);font-size:12.5px;margin-top:2px;}
+.client-card .stats{display:flex;gap:18px;margin-top:14px;}
+.client-card .stat-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+.client-card .stat-value{font-family:var(--font-display);font-weight:700;font-size:16px;margin-top:2px;}
+
+.team-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+.team-card .avatar{
+  width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent-dark);
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:16px;margin-bottom:10px;
+}
+.team-card .name{font-family:var(--font-display);font-weight:700;font-size:15px;}
+.team-card .role{color:var(--accent-dark);font-size:12px;font-weight:700;margin:2px 0 8px;}
+.team-card .meta-line{font-size:12.5px;color:var(--text-muted);margin-bottom:2px;}
+.team-card .actions{margin-top:12px;display:flex;gap:8px;}
+
+/* ===== TABLES ===== */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+table.data-table th{
+  text-align:left;background:var(--surface-alt);padding:11px 14px;font-size:11.5px;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--text-muted);font-weight:700;
+}
+table.data-table td{padding:11px 14px;border-top:1px solid var(--border);vertical-align:middle;}
+table.data-table tr:hover td{background:var(--surface-alt);}
+.status-pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block;}
+.status-pendente{background:var(--warn-soft);color:#9c6b1c;}
+.status-pago{background:var(--success-soft);color:var(--success);}
+.status-atrasado{background:var(--danger-soft);color:var(--danger);}
+.status-prospect{background:var(--surface-alt);color:var(--text-muted);}
+.status-negociacao{background:var(--warn-soft);color:#9c6b1c;}
+.status-cliente{background:var(--success-soft);color:var(--success);}
+.status-sem_interesse{background:var(--danger-soft);color:var(--danger);}
+
+/* ===== SUMMARY CARDS ===== */
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px;}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;}
+.summary-card .label{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:700;}
+.summary-card .value{font-family:var(--font-display);font-weight:800;font-size:22px;margin-top:6px;}
+.value.positive{color:var(--success);}
+.value.negative{color:var(--danger);}
+
+.section-title{font-family:var(--font-display);font-weight:800;font-size:15px;margin:26px 0 12px;}
+
+/* ===== HINT BANNER ===== */
+.hint-banner{
+  background:var(--accent-soft);color:var(--accent-dark);border:1px solid var(--accent);
+  border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;margin-bottom:16px;
+}
+
+/* ===== AGENDA ===== */
+.agenda-item{
+  display:flex;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;
+  transition:background .15s;
+}
+.agenda-item:last-child{border-bottom:none;}
+.agenda-item:hover{background:var(--surface-alt);}
+.agenda-item.agenda-atrasada .agenda-day, .agenda-item.agenda-atrasada .agenda-time{color:var(--danger);}
+.agenda-date{flex:0 0 64px;text-align:center;}
+.agenda-day{font-family:var(--font-display);font-weight:800;font-size:15px;}
+.agenda-time{font-size:12px;color:var(--text-muted);}
+.agenda-info{flex:1;min-width:0;}
+.agenda-clinic{font-family:var(--font-display);font-weight:700;font-size:14px;}
+.agenda-dentist{font-size:12.5px;color:var(--text-muted);margin-top:2px;}
+.agenda-tag{font-size:11px;font-weight:700;color:var(--text-muted);background:var(--surface-alt);padding:4px 10px;border-radius:20px;white-space:nowrap;}
+.agenda-item.agenda-atrasada .agenda-tag{background:var(--danger-soft);color:var(--danger);}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
+.empty-state h3{font-family:var(--font-display);color:var(--text);margin-bottom:6px;}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(15,26,48,.5);display:flex;align-items:center;justify-content:center;
+  z-index:1000;padding:20px;
+}
+.modal{background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:620px;max-height:88vh;
+  display:flex;flex-direction:column;overflow:hidden;}
+.modal-small{max-width:440px;}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 22px 14px;border-bottom:1px solid var(--border);}
+.modal-title{font-family:var(--font-display);font-weight:800;font-size:18px;}
+.modal-subtitle{font-size:12.5px;color:var(--text-muted);margin-top:3px;}
+.modal-close{background:none;border:none;font-size:24px;line-height:1;color:var(--text-muted);padding:0 4px;}
+.modal-close:hover{color:var(--text);}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 22px;gap:6px;overflow-x:auto;}
+.tab{background:none;border:none;padding:12px 4px;margin-right:18px;font-size:13px;font-weight:700;color:var(--text-muted);
+  border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent-dark);border-color:var(--accent);}
+.modal-body{padding:18px 22px;overflow-y:auto;flex:1;}
+.modal-footer{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;border-top:1px solid var(--border);}
+
+/* ===== FORMS ===== */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent);border-color:transparent;}
+.field textarea{resize:vertical;min-height:70px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field-hint{font-size:11px;color:var(--text-muted);margin-top:4px;}
+
+/* ===== PASSWORD GATE ===== */
+.password-gate{text-align:center;padding:30px 10px;}
+.password-gate .lock-icon{font-size:34px;margin-bottom:10px;}
+.password-gate p{color:var(--text-muted);font-size:13.5px;margin-bottom:16px;}
+.password-gate input{max-width:220px;margin:0 auto 10px;display:block;text-align:center;}
+.error-text{color:var(--danger);font-size:12.5px;margin-top:8px;min-height:16px;}
+
+/* ===== FINANCE WIDGETS ===== */
+.add-finance-form{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:flex-end;}
+.add-finance-form .field{margin-bottom:0;flex:1;min-width:110px;}
+.add-finance-form .field-small{flex:0 0 90px;}
+
+@media (max-width:880px){
+  .app{flex-direction:column;}
+  .sidebar{width:100%;height:auto;flex-direction:row;align-items:center;padding:12px 16px;position:relative;}
+  .logo{padding:0;margin-right:auto;}
+  .nav{flex-direction:row;flex-wrap:wrap;}
+  .sidebar-footer{display:none;}
+  .main{padding:18px;}
+  .field-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">F</div>
+      <div class="logo-text">FALCON<span>Company · Growth Ops</span></div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item" data-page="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-page="pipeline">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="5" height="13" rx="1.5"/></svg>
+        Pipeline
+      </button>
+      <button class="nav-item" data-page="agenda">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+        Agenda
+      </button>
+      <button class="nav-item" data-page="tarefas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+        Tarefas
+      </button>
+      <button class="nav-item" data-page="clientes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.7 5.8 6.3.9-4.6 4.4 1.1 6.2L12 16.2 6.5 19.3l1.1-6.2L3 8.7l6.3-.9z"/></svg>
+        Clientes
+      </button>
+      <button class="nav-item" data-page="operacoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        Operações
+      </button>
+      <button class="nav-item" data-page="clinicas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 11h.01M15 11h.01M9 7h.01M15 7h.01"/></svg>
+        Clínicas
+      </button>
+      <button class="nav-item" data-page="financeiro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><circle cx="17" cy="14" r="1.4" fill="currentColor" stroke="none"/></svg>
+        Financeiro
+      </button>
+      <button class="nav-item" data-page="equipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6"/><circle cx="17" cy="7" r="2.4"/><path d="M15.5 11.3c2.7.4 4.5 2.4 4.5 5.2"/></svg>
+        Equipe
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="user-switcher"></div>
+      <div id="mode-controls"></div>
+      <span id="sync-status">Pronto</span>
+      <div class="sidebar-note">Sincronizado com a equipe na nuvem; uma cópia fica salva neste navegador, então funciona mesmo offline. Use "Exportar" para backup.</div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <h1 id="page-title">Pipeline</h1>
+      <div id="topbar-actions"></div>
+    </header>
+    <div id="page-content"></div>
+  </main>
+</div>
+<div id="modal-root"></div>
+<div id="form-modal-root"></div>
+<div id="auth-root" style="display:none"></div>
+
+<script>
+/* ============================================================
+   ESTADO E ARMAZENAMENTO
+   ============================================================
+   O app abre instantaneamente com os dados salvos no próprio
+   navegador (localStorage) e, em paralelo e sem travar, sincroniza
+   com a nuvem (Firebase) para a equipe ver os mesmos dados.
+   Se a nuvem estiver fora do ar, o CRM continua funcionando offline.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBBXQX1LLoIFQ1YtkaOIwh93I2lYNlUteU",
+  authDomain: "crminternofalcon-a7760.firebaseapp.com",
+  projectId: "crminternofalcon-a7760",
+  storageBucket: "crminternofalcon-a7760.firebasestorage.app",
+  messagingSenderId: "524348595229",
+  appId: "1:524348595229:web:91de56b45b36ebe0eabaf4"
+};
+const LS_KEY = 'falcon_crm_data_v1';
+let db = null;
+let docRef = null;
+let firebaseReady = false;
+let syncStarted = false;
+let cloudSynced = false;
+let crmAuthed = false;
+let dataLoadedOnce = false;
+
+let state = { leads: [], clinics: [], team: [], financeGeral: [], tasks: [], compromissos: [] };
+
+try{
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  try{ db.settings({ experimentalAutoDetectLongPolling: true }); }catch(_){}
+  docRef = db.collection('falcon_crm').doc('dados');
+  firebaseReady = true;
+}catch(e){
+  console.error('Firebase indisponível — seguindo offline:', e);
+}
+
+const STAGES = [
+  {key:'frio', label:'Lead Frio', desc:'Leads que chegaram para a gente, ainda sem nenhum contato.', color:'#94A3B8'},
+  {key:'tratado', label:'Lead Tratado', desc:'Já chamamos o lead pela primeira vez.', color:'#5B9BD5'},
+  {key:'agendado', label:'Lead Agendado', desc:'Reunião marcada para fechar em call.', color:'#0EA5FF'},
+  {key:'followup', label:'Em Follow Up', desc:'Sumiu após a reunião ou parou de responder mensagens.', color:'#E0A23B'},
+  {key:'morto', label:'Lead Morto', desc:'Não quer absolutamente nada. Não chamar de novo.', color:'#C2554A'},
+];
+const STAGE_FECHADO = {key:'fechado', label:'Cliente Fechado', color:'#2FAE63'};
+const ALL_STAGES = [...STAGES, STAGE_FECHADO];
+
+const FINANCE_PASSWORD = 'elevasecret';
+
+const CARGOS = ['CEO','Financeiro','Closer','SDR','BDR'];
+const CLINIC_STATUS = [
+  {key:'prospect', label:'Prospect'},
+  {key:'negociacao', label:'Em negociação'},
+  {key:'cliente', label:'Cliente'},
+  {key:'sem_interesse', label:'Sem interesse'},
+];
+
+const ONBOARDING_STEPS = [
+  {key:'contrato', label:'Contrato assinado'},
+  {key:'kickoff', label:'Kickoff realizado'},
+  {key:'auditoria', label:'Auditoria concluída'},
+  {key:'crm', label:'Implantação CRM'},
+  {key:'treinamento', label:'Treinamento CRC'},
+  {key:'comercial', label:'Estruturação Comercial'},
+  {key:'dashboardimpl', label:'Dashboard implantado'},
+  {key:'resultados', label:'Reunião de resultados'},
+];
+
+/* ============================================================
+   JORNADA DO CLIENTE — 7 fases (cada cliente fica em uma fase)
+   ============================================================ */
+const JORNADA_FASES = [
+  {key:'venda', label:'Venda Fechada', color:'#2563EB', objetivo:'Transformar um cliente vendido em um cliente implantado.',
+    itens:['Contrato assinado','Pagamento confirmado','Grupo WhatsApp criado','Cliente cadastrado no CRM','Pasta da clínica criada','Kickoff agendado']},
+  {key:'kickoff', label:'Kickoff', color:'#0EA5FF', objetivo:'Entender a operação atual.',
+    itens:['Estrutura levantada','Marketing levantado','Comercial levantado','Indicadores levantados','Sistemas levantados','Documento Diagnóstico Inicial']},
+  {key:'diagnostico', label:'Diagnóstico Profundo', color:'#38BDF8', objetivo:'Encontrar os gargalos.',
+    itens:['CRM analisado','WhatsApp analisado','Agenda analisada','Funil e fluxos analisados','Scripts analisados','Indicadores analisados','Relatório de Gargalos']},
+  {key:'estruturacao', label:'Estruturação', color:'#6366F1', objetivo:'Criar a máquina comercial.',
+    itens:['Estágios do CRM criados','Dashboard criado','CRC definida (função/rotina/KPIs)','Scripts criados']},
+  {key:'treinamento', label:'Treinamento', color:'#A855F7', objetivo:'Fazer a equipe executar.',
+    itens:['Treinamento CRC','Treinamento Recepção','Treinamento Comercial','Simulações realizadas']},
+  {key:'operacao', label:'Operação Assistida', color:'#E0A23B', objetivo:'Garantir a execução.',
+    itens:['Acompanhamento diário ativo','Scripts corrigidos','Fluxos corrigidos','Processos corrigidos']},
+  {key:'mensalidade', label:'Início da Mensalidade', color:'#2FAE63', objetivo:'Performance contínua.',
+    itens:['Rotina mensal ativa','Indicadores obrigatórios definidos','Auditoria mensal','Reunião estratégica mensal']},
+];
+function jornadaFaseInfo(key){ return JORNADA_FASES.find(f=>f.key===key) || JORNADA_FASES[0]; }
+function jornadaFaseIndex(lead){ const i = JORNADA_FASES.findIndex(f=>f.key===(lead.jornadaFase||'venda')); return i<0?0:i; }
+function jornadaFaseProgress(lead, faseKey){
+  const marc = (lead.jornada||{})[faseKey] || {};
+  const fase = jornadaFaseInfo(faseKey);
+  const done = fase.itens.filter((_,i)=>marc[i]).length;
+  return {done, total:fase.itens.length};
+}
+function jornadaTotal(lead){
+  let done=0, total=0;
+  JORNADA_FASES.forEach(f=>{ const p=jornadaFaseProgress(lead,f.key); done+=p.done; total+=p.total; });
+  return {done, total, pct: total ? Math.round(done/total*100) : 0};
+}
+
+const TASK_STATUS = [
+  {key:'pendente', label:'Pendente'},
+  {key:'andamento', label:'Em andamento'},
+  {key:'concluida', label:'Concluída'},
+];
+const TASK_PRIORIDADE = [
+  {key:'baixa', label:'Baixa'},
+  {key:'media', label:'Média'},
+  {key:'alta', label:'Alta'},
+];
+
+let currentPage = 'dashboard';
+let pipelineSearch = '';
+let clientesFaseFilter = '';
+
+/* ============================================================
+   MODO DE ACESSO: Owner/CEO (vê tudo) x Colaborador (só os leads dele)
+   ============================================================ */
+let viewMode = 'owner';          // 'owner' | 'colab'
+let colabUserId = '';            // id do colaborador logado no modo colaborador
+const COLAB_PAGES = ['pipeline','agenda','tarefas','clinicas'];
+function isColab(){ return viewMode === 'colab'; }
+function leadVisible(l){ return viewMode === 'owner' ? true : (!!l && l.responsavelId === colabUserId); }
+
+/* ============================================================
+   USUÁRIO ATUAL (para restringir a visibilidade das tarefas)
+   ============================================================ */
+let currentUserId = localStorage.getItem('eleva_current_user_id') || '';
+function getCurrentUser(){
+  return state.team.find(m=>m.id===currentUserId) || null;
+}
+function isCEO(){
+  const u = getCurrentUser();
+  return !!u && u.cargo === 'CEO';
+}
+function setCurrentUser(id){
+  currentUserId = id || '';
+  if(currentUserId) localStorage.setItem('eleva_current_user_id', currentUserId);
+  else localStorage.removeItem('eleva_current_user_id');
+}
+
+let currentModalLead = null;
+let isNewLead = false;
+let modalActiveTab = 'geral';
+let modalFinanceUnlocked = false;
+let modalFinanceError = '';
+let modalOriginalStage = null;
+let modalHintMessage = '';
+
+let financeUnlocked = false;
+let financeError = '';
+
+let formModalConfig = null;
+let pendingDeleteKey = null;
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,10); }
+function escapeHTML(str){
+  if(str===undefined||str===null) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatCurrency(v){
+  return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v)||0);
+}
+function formatDate(d){
+  if(!d) return '-';
+  const date = new Date(d);
+  if(isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('pt-BR');
+}
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function val(sel){ const el=document.querySelector(sel); return el ? el.value : ''; }
+function numVal(sel){ const v = parseFloat(val(sel)); return isNaN(v) ? 0 : v; }
+function matchesSearch(lead,q){
+  if(!q) return true;
+  q = q.toLowerCase();
+  return (lead.dentista||'').toLowerCase().includes(q) ||
+         (lead.clinica||'').toLowerCase().includes(q) ||
+         (lead.cidade||'').toLowerCase().includes(q);
+}
+function stageInfo(key){ return ALL_STAGES.find(s=>s.key===key) || ALL_STAGES[0]; }
+
+/* ============================================================
+   STORAGE (local instantâneo + sincronização em nuvem)
+   ============================================================ */
+function loadData(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      const d = JSON.parse(raw) || {};
+      state.leads = d.leads || [];
+      state.clinics = d.clinics || [];
+      state.team = d.team || [];
+      state.financeGeral = d.financeGeral || [];
+      state.tasks = d.tasks || [];
+      state.compromissos = d.compromissos || [];
+    }
+  }catch(e){
+    console.error('Erro ao ler dados locais:', e);
+  }
+}
+function cacheLocal(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ console.error(e); }
+}
+function recordCount(o){
+  o = o || {};
+  return (o.leads||[]).length + (o.clinics||[]).length + (o.team||[]).length +
+         (o.financeGeral||[]).length + (o.tasks||[]).length + (o.compromissos||[]).length;
+}
+function adoptData(d){
+  d = d || {};
+  state.leads = d.leads || [];
+  state.clinics = d.clinics || [];
+  state.team = d.team || [];
+  state.financeGeral = d.financeGeral || [];
+  state.tasks = d.tasks || [];
+  state.compromissos = d.compromissos || [];
+}
+function nowT(){ return new Date().toLocaleTimeString('pt-BR'); }
+
+// Sincronização em segundo plano — NUNCA bloqueia a abertura do app
+// e NUNCA deixa um navegador vazio apagar os dados da nuvem.
+function startCloudSync(){
+  if(!firebaseReady){ setSyncStatus('Offline (somente neste navegador)'); return; }
+  setSyncStatus('Conectando à nuvem...');
+  docRef.onSnapshot(snap=>{
+    const cloud = snap.exists() ? (snap.data() || {}) : null;
+    const firstReconcile = !cloudSynced;
+    if(firstReconcile){
+      cloudSynced = true;
+      const localN = recordCount(state);
+      const cloudN = recordCount(cloud);
+      if(cloud && cloudN > 0 && cloudN >= localN){
+        // A nuvem tem mais (ou igual) dados → adota a nuvem.
+        adoptData(cloud); cacheLocal();
+      } else if(localN > 0){
+        // Tenho dados locais e a nuvem está vazia/menor → envia os meus pra nuvem.
+        cacheLocal();
+        setSyncStatus('Enviando seus dados para a nuvem...');
+        docRef.set(state)
+          .then(()=> setSyncStatus('Dados enviados para a nuvem às ' + nowT()))
+          .catch(e=>{ console.error(e); setSyncStatus('Não consegui enviar para a nuvem agora'); });
+      } else if(cloud){
+        adoptData(cloud); cacheLocal();
+      }
+    } else if(cloud){
+      // Atualizações seguintes: a nuvem é a fonte da verdade.
+      adoptData(cloud); cacheLocal();
+    }
+    setSyncStatus('Sincronizado às ' + nowT());
+    if(currentModalLead || formModalConfig) return;
+    if(crmAuthed){ render(); }
+    else if(firstReconcile){ gateRender(); }
+  }, err=>{
+    console.error(err);
+    setSyncStatus('Sem conexão com a nuvem — trabalhando offline');
+  });
+}
+
+function saveData(){
+  cacheLocal();
+  const t = nowT();
+  if(firebaseReady && cloudSynced){
+    setSyncStatus('Salvando...');
+    docRef.set(state)
+      .then(()=> setSyncStatus('Sincronizado às ' + t))
+      .catch(e=>{ console.error(e); setSyncStatus('Salvo neste navegador (nuvem indisponível)'); });
+  } else if(firebaseReady && !cloudSynced){
+    // Ainda não reconciliou com a nuvem — guarda local e sobe assim que conectar.
+    setSyncStatus('Salvo neste navegador (sincroniza ao conectar)');
+  } else {
+    setSyncStatus('Salvo neste navegador às ' + t);
+  }
+}
+function setSyncStatus(msg){
+  const el = document.getElementById('sync-status');
+  if(el) el.textContent = msg;
+}
+
+/* ============================================================
+   RENDER PRINCIPAL
+   ============================================================ */
+function render(){
+  if(isColab() && !COLAB_PAGES.includes(currentPage)) currentPage = 'pipeline';
+  document.querySelectorAll('.nav-item').forEach(b=>{
+    const allowed = !isColab() || COLAB_PAGES.includes(b.dataset.page);
+    b.style.display = allowed ? '' : 'none';
+    b.classList.toggle('active', b.dataset.page===currentPage);
+  });
+  const titles = {dashboard:'Dashboard', pipeline:'Pipeline de Leads', agenda:'Agenda', tarefas:'Tarefas', clientes:'Clientes Fechados', operacoes:'Operações / Implantação', clinicas:'Base de Clínicas', financeiro:'Financeiro', equipe:'Equipe Falcon'};
+  document.getElementById('page-title').textContent = titles[currentPage];
+  renderUserSwitcher();
+  renderModeControls();
+  renderTopbarActions();
+  switch(currentPage){
+    case 'dashboard': renderDashboard(); break;
+    case 'pipeline': renderPipeline(); break;
+    case 'agenda': renderAgenda(); break;
+    case 'tarefas': renderTarefas(); break;
+    case 'clientes': renderClientes(); break;
+    case 'operacoes': renderOperacoes(); break;
+    case 'clinicas': renderClinicas(); break;
+    case 'financeiro': renderFinanceiro(); break;
+    case 'equipe': renderEquipe(); break;
+  }
+}
+
+function renderUserSwitcher(){
+  const el = document.getElementById('user-switcher');
+  if(!el) return;
+  if(isColab()){ el.innerHTML = ''; return; }
+  const u = getCurrentUser();
+  if(u && crmAuthed){
+    el.innerHTML = `
+      <label>Conectado como</label>
+      <div class="current-user-box">
+        <div class="cu-name">${escapeHTML(u.nome)}</div>
+        <div class="cu-role">${escapeHTML(u.cargo)}</div>
+      </div>
+      <button id="crm-switch-user" style="margin-top:6px">Trocar usuário</button>`;
+    document.getElementById('crm-switch-user').addEventListener('click', crmLogout);
+  } else {
+    el.innerHTML = `
+      <label>Você é</label>
+      <select id="current-user-select">
+        <option value="">Selecionar...</option>
+        ${state.team.map(m=>`<option value="${m.id}" ${m.id===currentUserId?'selected':''}>${escapeHTML(m.nome)} (${escapeHTML(m.cargo)})</option>`).join('')}
+      </select>`;
+    const s = document.getElementById('current-user-select');
+    if(s) s.addEventListener('change', e=>{ setCurrentUser(e.target.value); render(); });
+  }
+}
+
+/* ---- Controles de modo (Owner/CEO x Colaborador) na barra lateral ---- */
+function renderModeControls(){
+  const el = document.getElementById('mode-controls');
+  if(!el) return;
+  if(isColab()){
+    const m = state.team.find(x=>x.id===colabUserId);
+    el.innerHTML = `
+      <div class="current-user-box" style="margin-bottom:8px">
+        <div class="cu-name">${escapeHTML(m ? m.nome : 'Colaborador')}</div>
+        <div class="cu-role">Modo colaborador</div>
+      </div>
+      <button id="exit-colab-btn" style="width:100%">↩ Sair do modo colaborador</button>`;
+    document.getElementById('exit-colab-btn').addEventListener('click', exitColab);
+  } else {
+    el.innerHTML = `<button id="enter-colab-btn" style="width:100%;background:var(--accent);color:#fff">👥 Modo colaborador</button>`;
+    document.getElementById('enter-colab-btn').addEventListener('click', ()=>showColabLogin());
+  }
+}
+
+/* ---- Tela de entrada do colaborador (com senha) ---- */
+function showColabLogin(selId, msg){
+  showOverlay();
+  const root = document.getElementById('auth-root');
+  if(state.team.length===0){
+    root.innerHTML = `
+      <div class="auth-screen"><div class="auth-card">
+        <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+        <div class="auth-title">Modo colaborador</div>
+        <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:16px">Ainda não há colaboradores cadastrados. O owner precisa cadastrar a equipe (página "Equipe") e definir a senha de cada um.</p>
+        <button class="btn btn-secondary" id="colab-back" style="width:100%;justify-content:center">Voltar para Owner/CEO</button>
+      </div></div>`;
+    document.getElementById('colab-back').addEventListener('click', ()=>{ hideOverlay(); render(); });
+    return;
+  }
+  const sel = selId!==undefined ? selId : colabUserId;
+  root.innerHTML = `
+    <div class="auth-screen"><div class="auth-card">
+      <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+      <div class="auth-title">Entrar como colaborador</div>
+      <div class="field"><label>Colaborador</label>
+        <select id="colab-select">
+          <option value="">Selecionar...</option>
+          ${state.team.map(m=>`<option value="${m.id}" ${m.id===sel?'selected':''}>${escapeHTML(m.nome)} (${escapeHTML(m.cargo)})</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Senha</label><input id="colab-pwd" type="password" placeholder="Sua senha"></div>
+      <button class="btn btn-primary" id="colab-enter" style="width:100%;justify-content:center">Entrar</button>
+      <div class="error-text" style="text-align:center;min-height:18px">${msg?escapeHTML(msg):''}</div>
+      <button class="btn btn-secondary" id="colab-back" style="width:100%;justify-content:center;margin-top:6px">Voltar para Owner/CEO</button>
+    </div></div>`;
+  const enter = ()=>{
+    const id = val('#colab-select');
+    const pwd = val('#colab-pwd');
+    if(!id){ showColabLogin(id, 'Selecione o colaborador.'); return; }
+    const m = state.team.find(x=>x.id===id);
+    if(!m){ showColabLogin('', 'Colaborador não encontrado.'); return; }
+    if(!m.senha){ showColabLogin(id, 'Esse colaborador ainda não tem senha. Peça ao owner para definir na página Equipe.'); return; }
+    if(pwd !== m.senha){ showColabLogin(id, 'Senha incorreta.'); return; }
+    viewMode = 'colab';
+    colabUserId = id;
+    currentUserId = id;            // para as Tarefas mostrarem as dele
+    currentPage = 'pipeline';
+    hideOverlay();
+    render();
+  };
+  document.getElementById('colab-enter').addEventListener('click', enter);
+  document.getElementById('colab-pwd').addEventListener('keydown', e=>{ if(e.key==='Enter') enter(); });
+  document.getElementById('colab-back').addEventListener('click', ()=>{ hideOverlay(); render(); });
+}
+
+function exitColab(){
+  viewMode = 'owner';
+  colabUserId = '';
+  currentUserId = localStorage.getItem('eleva_current_user_id') || '';
+  currentPage = 'pipeline';
+  render();
+}
+
+function renderTopbarActions(){
+  const el = document.getElementById('topbar-actions');
+  if(currentPage==='pipeline'){
+    el.innerHTML = `
+      <input type="text" class="search-input" id="pipeline-search" placeholder="Buscar por dentista, clínica ou cidade..." value="${escapeHTML(pipelineSearch)}">
+      <button class="btn btn-primary" id="new-lead-btn">+ Novo Lead</button>
+    `;
+    document.getElementById('pipeline-search').addEventListener('input', e=>{ pipelineSearch = e.target.value; renderPipeline(); });
+    document.getElementById('new-lead-btn').addEventListener('click', createNewLead);
+  } else if(currentPage==='clinicas'){
+    el.innerHTML = `<button class="btn btn-primary" id="new-clinic-btn">+ Nova Clínica</button>`;
+    document.getElementById('new-clinic-btn').addEventListener('click', ()=>openClinicForm(null));
+  } else if(currentPage==='agenda'){
+    el.innerHTML = isColab() ? '' : `<button class="btn btn-primary" id="new-compromisso-btn">+ Novo Compromisso</button>`;
+    const nc = document.getElementById('new-compromisso-btn');
+    if(nc) nc.addEventListener('click', ()=>openCompromissoForm(null));
+  } else if(currentPage==='tarefas'){
+    if(getCurrentUser()){
+      el.innerHTML = `<button class="btn btn-primary" id="new-task-btn">+ Nova Tarefa</button>`;
+      document.getElementById('new-task-btn').addEventListener('click', ()=>openTaskForm(null));
+    } else {
+      el.innerHTML = '';
+    }
+  } else if(currentPage==='equipe'){
+    el.innerHTML = `<button class="btn btn-primary" id="new-team-btn">+ Novo Membro</button>`;
+    document.getElementById('new-team-btn').addEventListener('click', ()=>openTeamForm(null));
+  } else if(currentPage==='financeiro' && financeUnlocked){
+    el.innerHTML = `<button class="btn btn-primary" id="new-finance-btn">+ Nova Conta</button>`;
+    document.getElementById('new-finance-btn').addEventListener('click', ()=>openFinanceGeralForm(null));
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+/* ============================================================
+   PÁGINA: PIPELINE (KANBAN)
+   ============================================================ */
+function renderPipeline(){
+  const content = document.getElementById('page-content');
+
+  let html = '<div class="roteiro-bar">';
+  STAGES.forEach((s,i)=>{
+    html += `
+      <div class="roteiro-step">
+        <div class="roteiro-dot" style="background:${s.color}"></div>
+        <div class="roteiro-label">${s.label}</div>
+        <div class="roteiro-desc">${s.desc}</div>
+      </div>`;
+    if(i < STAGES.length-1) html += '<div class="roteiro-line"></div>';
+  });
+  html += '</div>';
+
+  html += '<div class="kanban">';
+  STAGES.forEach(stage=>{
+    const leads = state.leads.filter(l=>l.stage===stage.key && matchesSearch(l,pipelineSearch) && leadVisible(l));
+    html += `
+      <div class="kanban-col">
+        <div class="kanban-col-header" style="border-color:${stage.color}">
+          <span>${stage.label}</span><span class="count">${leads.length}</span>
+        </div>
+        <div class="kanban-col-body" data-stage="${stage.key}">
+          ${leads.map(leadCardHTML).join('') || '<div class="empty-col">Nenhum lead aqui</div>'}
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+
+  content.innerHTML = html;
+  attachKanbanEvents();
+}
+
+function leadCardHTML(lead){
+  const invest = Number(lead.investimentoMkt)||0;
+  return `
+    <div class="lead-card" draggable="true" data-id="${lead.id}">
+      <div class="lead-clinic">${escapeHTML(lead.clinica || 'Sem clínica informada')}</div>
+      <div class="lead-name">${escapeHTML(lead.dentista || 'Sem nome')}</div>
+      <div class="lead-meta">
+        ${lead.cidade ? `<span>${escapeHTML(lead.cidade)}</span>` : ''}
+        ${lead.origem ? `<span class="dot">•</span><span>${escapeHTML(lead.origem)}</span>` : ''}
+      </div>
+      ${invest>0 ? `<div class="lead-footer"><span class="badge badge-invest">${formatCurrency(invest)}/mês em mkt</span></div>` : ''}
+    </div>`;
+}
+
+function attachKanbanEvents(){
+  document.querySelectorAll('.lead-card').forEach(card=>{
+    let dragging = false;
+    card.addEventListener('dragstart', e=>{
+      dragging = true;
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', ()=>{ dragging = false; });
+    card.addEventListener('click', ()=>{ if(!dragging) openLeadModal(card.dataset.id); });
+  });
+  document.querySelectorAll('.kanban-col-body').forEach(col=>{
+    col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', ()=>{ col.classList.remove('drag-over'); });
+    col.addEventListener('drop', e=>{
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      const lead = state.leads.find(l=>l.id===id);
+      if(lead){
+        const novaEtapa = col.dataset.stage;
+        const mudou = lead.stage !== novaEtapa;
+        lead.stage = novaEtapa;
+        if(mudou) lead.stageChangedAt = new Date().toISOString();
+        if(novaEtapa==='fechado' && !lead.dataFechamento) lead.dataFechamento = new Date().toISOString();
+        if(novaEtapa!=='fechado') lead.dataFechamento = '';
+        saveData();
+        renderPipeline();
+        if(mudou && novaEtapa==='agendado' && !lead.reuniaoData){
+          modalHintMessage = 'Esse lead foi movido para "Lead Agendado". Defina a data e horário da reunião na aba Geral.';
+          openLeadModal(lead.id);
+        }
+      }
+    });
+  });
+}
+
+/* ============================================================
+   PÁGINA: CLIENTES FECHADOS
+   ============================================================ */
+function renderClientes(){
+  const content = document.getElementById('page-content');
+  const clientes = state.leads.filter(l=>l.stage==='fechado');
+  if(clientes.length===0){
+    content.innerHTML = `<div class="empty-state"><h3>Nenhum cliente fechado ainda</h3><p>Quando um lead avançar para "Cliente Fechado" no pipeline, ele aparece aqui.</p></div>`;
+    return;
+  }
+  const filtrados = clientesFaseFilter ? clientes.filter(c=>(c.jornadaFase||'venda')===clientesFaseFilter) : clientes;
+
+  let filterBar = `<div class="jornada-filter">
+    <button class="jfilter ${clientesFaseFilter===''?'on':''}" data-fase="">Todas <span class="jfilter-n">${clientes.length}</span></button>
+    ${JORNADA_FASES.map(f=>{
+      const n = clientes.filter(c=>(c.jornadaFase||'venda')===f.key).length;
+      return `<button class="jfilter ${clientesFaseFilter===f.key?'on':''}" data-fase="${f.key}" style="--c:${f.color}"><span class="jfilter-dot" style="background:${f.color}"></span>${escapeHTML(f.label)} <span class="jfilter-n">${n}</span></button>`;
+    }).join('')}
+  </div>`;
+
+  const grid = filtrados.length
+    ? `<div class="card-grid">${filtrados.map(clienteCardHTML).join('')}</div>`
+    : `<div class="empty-state" style="padding:30px"><h3>Nenhum cliente nesta fase</h3><p>Troque o filtro acima para ver outros clientes.</p></div>`;
+
+  content.innerHTML = filterBar + grid;
+
+  document.querySelectorAll('.jfilter').forEach(b=>{
+    b.addEventListener('click', ()=>{ clientesFaseFilter = b.dataset.fase; renderClientes(); });
+  });
+  document.querySelectorAll('.client-card .card-jornada').forEach(el=>{
+    el.addEventListener('click', e=>{ e.stopPropagation(); openLeadModal(el.dataset.id, 'jornada'); });
+  });
+  document.querySelectorAll('.client-card').forEach(card=>{
+    card.addEventListener('click', ()=>openLeadModal(card.dataset.id));
+  });
+}
+
+function clienteCardHTML(c){
+  const fi = jornadaFaseIndex(c);
+  const fa = JORNADA_FASES[fi];
+  const pr = jornadaFaseProgress(c, fa.key);
+  let segs = '';
+  JORNADA_FASES.forEach((f,i)=>{ segs += `<span class="jseg" style="background:${i<=fi?f.color:'var(--surface-alt)'}"></span>`; });
+  return `
+    <div class="client-card" data-id="${c.id}">
+      <div class="top-row">
+        <div>
+          <div class="clinic-name">${escapeHTML(c.clinica || 'Sem clínica')}</div>
+          <div class="dentist-name">${escapeHTML(c.dentista || '')}${c.cidade ? ' · '+escapeHTML(c.cidade) : ''}</div>
+        </div>
+        ${c.plano ? `<span class="badge badge-invest">${escapeHTML(c.plano)}</span>` : ''}
+      </div>
+      <div class="card-jornada" data-id="${c.id}" title="Abrir a Jornada do cliente">
+        <div class="card-jornada-top">
+          <span class="jornada-pill" style="background:${fa.color}22;color:${fa.color}"><span class="dot" style="background:${fa.color}"></span>${escapeHTML(fa.label)}</span>
+          <span class="card-jornada-meta">Fase ${fi+1}/7 · ${pr.done}/${pr.total}</span>
+        </div>
+        <div class="jornada-bar">${segs}</div>
+      </div>
+      <div class="stats">
+        <div>
+          <div class="stat-label">Mensalidade Falcon</div>
+          <div class="stat-value">${formatCurrency(c.valorMensalidade)}</div>
+        </div>
+        <div>
+          <div class="stat-label">Invest. em mkt</div>
+          <div class="stat-value">${formatCurrency(c.investimentoMkt)}</div>
+        </div>
+        <div>
+          <div class="stat-label">Cliente desde</div>
+          <div class="stat-value" style="font-size:13px">${formatDate(c.dataFechamento)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   PÁGINA: AGENDA
+   ============================================================ */
+function meetingTimestamp(lead){
+  if(!lead.reuniaoData) return null;
+  return new Date(lead.reuniaoData + 'T' + (lead.reuniaoHora || '00:00')).getTime();
+}
+
+function compromissoTimestamp(c){
+  if(!c.data) return null;
+  return new Date(c.data + 'T' + (c.hora || '00:00')).getTime();
+}
+
+function renderAgenda(){
+  const content = document.getElementById('page-content');
+  const now = Date.now();
+
+  const eventosLead = state.leads
+    .filter(l=>l.reuniaoData && l.stage!=='fechado' && l.stage!=='morto' && leadVisible(l))
+    .map(l=>({
+      tipo: 'lead',
+      id: l.id,
+      ts: meetingTimestamp(l),
+      data: l.reuniaoData,
+      hora: l.reuniaoHora || '',
+      titulo: l.clinica || 'Sem clínica',
+      subtitulo: (l.dentista || 'Sem nome') + (l.reuniaoObs ? ' · '+l.reuniaoObs : ''),
+      tag: 'Lead Agendado'
+    }));
+
+  const eventosCompromisso = isColab() ? [] : (state.compromissos || []).map(c=>({
+    tipo: 'compromisso',
+    id: c.id,
+    ts: compromissoTimestamp(c),
+    data: c.data,
+    hora: c.hora || '',
+    titulo: c.titulo || 'Compromisso',
+    subtitulo: c.descricao || '',
+    tag: 'Compromisso'
+  }));
+
+  const todos = [...eventosLead, ...eventosCompromisso]
+    .filter(e=>e.ts!==null)
+    .sort((a,b)=>a.ts-b.ts);
+
+  const atrasadas = todos.filter(e=>e.ts < now);
+  const proximas = todos.filter(e=>e.ts >= now);
+
+  function eventRow(ev, atrasada){
+    return `
+      <div class="agenda-item ${atrasada?'agenda-atrasada':''}" data-tipo="${ev.tipo}" data-id="${ev.id}">
+        <div class="agenda-date">
+          <div class="agenda-day">${new Date(ev.data+'T00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</div>
+          <div class="agenda-time">${escapeHTML(ev.hora || '--:--')}</div>
+        </div>
+        <div class="agenda-info">
+          <div class="agenda-clinic">${escapeHTML(ev.titulo)}</div>
+          ${ev.subtitulo ? `<div class="agenda-dentist">${escapeHTML(ev.subtitulo)}</div>` : ''}
+        </div>
+        <div class="agenda-tag">${atrasada ? 'Vencido' : ev.tag}</div>
+      </div>`;
+  }
+
+  let html = '';
+
+  html += `<div class="section-title" style="margin-top:0">Em atraso</div>`;
+  html += atrasadas.length
+    ? `<div class="table-wrap" style="margin-bottom:8px">${atrasadas.map(e=>eventRow(e,true)).join('')}</div>`
+    : `<div class="empty-state" style="padding:20px"><h3>Nada em atraso</h3></div>`;
+
+  html += `<div class="section-title">Próximos</div>`;
+  html += proximas.length
+    ? `<div class="table-wrap" style="margin-bottom:8px">${proximas.map(e=>eventRow(e,false)).join('')}</div>`
+    : `<div class="empty-state" style="padding:20px"><h3>Nada agendado</h3><p>Use "+ Novo Compromisso" para marcar algo manualmente, ou defina uma data de reunião na aba "Geral" de um lead.</p></div>`;
+
+  content.innerHTML = html;
+
+  document.querySelectorAll('.agenda-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      if(item.dataset.tipo==='lead') openLeadModal(item.dataset.id);
+      else openCompromissoForm(item.dataset.id);
+    });
+  });
+}
+
+function openCompromissoForm(id){
+  const compromisso = id ? state.compromissos.find(c=>c.id===id) : {
+    id: uid('comp'), titulo:'', descricao:'', data: todayISO(), hora:''
+  };
+  openFormModal({
+    title: id ? 'Editar compromisso' : 'Novo compromisso',
+    data: compromisso,
+    fields: [
+      {key:'titulo', label:'Título', type:'text', placeholder:'Ex: Reunião interna, visita à clínica...'},
+      {key:'data', label:'Data', type:'date'},
+      {key:'hora', label:'Horário', type:'time'},
+      {key:'descricao', label:'Observações', type:'textarea', placeholder:'Local, link da call, pauta...'},
+    ],
+    onSave: data=>{
+      state.compromissos = state.compromissos || [];
+      const idx = state.compromissos.findIndex(c=>c.id===data.id);
+      if(idx>=0) state.compromissos[idx]=data; else state.compromissos.push(data);
+      saveData(); render();
+    },
+    onDelete: id ? ()=>{
+      state.compromissos = (state.compromissos||[]).filter(c=>c.id!==id);
+      saveData(); render();
+    } : null
+  });
+}
+/* ============================================================
+   MODAL DE LEAD / CLIENTE
+   ============================================================ */
+function createNewLead(){
+  const now = new Date().toISOString();
+  currentModalLead = {
+    id: uid('lead'), dentista:'', telefone:'', email:'', clinica:'', cidade:'', instagram:'',
+    origem:'', stage:'frio', observacoes:'', investimentoMkt:0, canalMkt:'', agenciaAtual:'',
+    numCadeiras:'', dataCriacao:now, dataFechamento:'', plano:'', valorMensalidade:0,
+    reuniaoData:'', reuniaoHora:'', reuniaoObs:'', stageChangedAt:now,
+    propostaEnviada:false, cancelado:false, emRisco:false, onboarding:{},
+    jornadaFase:'venda', jornada:{},
+    responsavelId: isColab() ? colabUserId : '',
+    financeiro:[]
+  };
+  isNewLead = true;
+  modalActiveTab = 'geral';
+  modalFinanceUnlocked = false;
+  modalFinanceError = '';
+  modalOriginalStage = currentModalLead.stage;
+  if(!modalHintMessage) modalHintMessage = '';
+  renderModal();
+}
+
+function openLeadModal(id, tab){
+  const lead = state.leads.find(l=>l.id===id);
+  if(!lead) return;
+  currentModalLead = JSON.parse(JSON.stringify(lead));
+  currentModalLead.financeiro = currentModalLead.financeiro || [];
+  currentModalLead.reuniaoData = currentModalLead.reuniaoData || '';
+  currentModalLead.reuniaoHora = currentModalLead.reuniaoHora || '';
+  currentModalLead.reuniaoObs = currentModalLead.reuniaoObs || '';
+  currentModalLead.stageChangedAt = currentModalLead.stageChangedAt || currentModalLead.dataCriacao;
+  currentModalLead.propostaEnviada = currentModalLead.propostaEnviada || false;
+  currentModalLead.cancelado = currentModalLead.cancelado || false;
+  currentModalLead.emRisco = currentModalLead.emRisco || false;
+  currentModalLead.onboarding = currentModalLead.onboarding || {};
+  currentModalLead.jornadaFase = currentModalLead.jornadaFase || 'venda';
+  currentModalLead.jornada = currentModalLead.jornada || {};
+  currentModalLead.responsavelId = currentModalLead.responsavelId || '';
+  isNewLead = false;
+  modalActiveTab = tab || 'geral';
+  modalFinanceUnlocked = false;
+  modalFinanceError = '';
+  modalOriginalStage = currentModalLead.stage;
+  renderModal();
+}
+
+function closeModal(){
+  currentModalLead = null;
+  modalHintMessage = '';
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+function renderModal(){
+  const root = document.getElementById('modal-root');
+  if(!currentModalLead){ root.innerHTML = ''; return; }
+  const lead = currentModalLead;
+  root.innerHTML = `
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">${escapeHTML(lead.dentista || 'Novo lead')}</div>
+            <div class="modal-subtitle">${escapeHTML(lead.clinica || 'Sem clínica informada')}</div>
+          </div>
+          <button class="modal-close" id="modal-close">×</button>
+        </div>
+        <div class="modal-tabs">
+          <button class="tab ${modalActiveTab==='geral'?'active':''}" data-tab="geral">Geral</button>
+          <button class="tab ${modalActiveTab==='clinica'?'active':''}" data-tab="clinica">Clínica &amp; Marketing</button>
+          <button class="tab ${modalActiveTab==='jornada'?'active':''}" data-tab="jornada">🚀 Jornada</button>
+          ${isColab() ? '' : `<button class="tab ${modalActiveTab==='financeiro'?'active':''}" data-tab="financeiro">🔒 Financeiro</button>`}
+        </div>
+        <div class="modal-body" id="modal-body">
+          ${modalHintMessage ? `<div class="hint-banner">💡 ${escapeHTML(modalHintMessage)}</div>` : ''}
+          ${modalActiveTab==='geral' ? renderModalGeral(lead) : ''}
+          ${modalActiveTab==='clinica' ? renderModalClinica(lead) : ''}
+          ${modalActiveTab==='jornada' ? renderModalJornada(lead) : ''}
+          ${modalActiveTab==='financeiro' ? renderModalFinanceiro(lead) : ''}
+        </div>
+        <div class="modal-footer">
+          ${isNewLead ? '<span></span>' : `<button class="btn btn-danger" id="delete-lead-btn">Excluir lead</button>`}
+          <button class="btn btn-primary" id="save-lead-btn">Salvar alterações</button>
+        </div>
+      </div>
+    </div>`;
+  attachModalEvents();
+}
+
+function renderModalGeral(lead){
+  return `
+    <div class="field-row">
+      <div class="field"><label>Nome do dentista</label><input id="f-dentista" value="${escapeHTML(lead.dentista)}"></div>
+      <div class="field"><label>Telefone / WhatsApp</label><input id="f-telefone" value="${escapeHTML(lead.telefone)}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>E-mail</label><input id="f-email" value="${escapeHTML(lead.email)}"></div>
+      <div class="field"><label>Origem do lead</label><input id="f-origem" placeholder="Indicação, Instagram, Google..." value="${escapeHTML(lead.origem)}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Etapa no pipeline</label>
+        <select id="f-stage">
+          ${ALL_STAGES.map(s=>`<option value="${s.key}" ${lead.stage===s.key?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Lead criado em</label><input value="${formatDate(lead.dataCriacao)}" disabled></div>
+    </div>
+    <div class="field">
+      <label>Responsável (colaborador que cuida deste lead)</label>
+      <select id="f-responsavel" ${isColab()?'disabled':''}>
+        <option value="">Sem responsável (só o owner vê)</option>
+        ${state.team.map(m=>`<option value="${m.id}" ${(lead.responsavelId||'')===m.id?'selected':''}>${escapeHTML(m.nome)} (${escapeHTML(m.cargo)})</option>`).join('')}
+      </select>
+      ${isColab()?'<div class="field-hint">No modo colaborador, novos leads ficam automaticamente com você.</div>':'<div class="field-hint">No modo colaborador, cada pessoa só vê os leads onde está como responsável.</div>'}
+    </div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="f-propostaenviada" ${lead.propostaEnviada?'checked':''} style="width:17px;height:17px;"> Proposta enviada
+      </label>
+    </div>
+    <div class="field">
+      <label>Observações / histórico de interações</label>
+      <textarea id="f-observacoes" placeholder="Anote o que foi falado, próximos passos, etc.">${escapeHTML(lead.observacoes)}</textarea>
+    </div>
+    <div class="section-title" style="margin-top:6px">Reunião / Agenda</div>
+    <div class="field-hint" style="margin-bottom:10px">Ao definir uma data de reunião, este lead vai automaticamente para a etapa "Lead Agendado" — não importa em qual etapa ele estava.</div>
+    <div class="field-row">
+      <div class="field"><label>Data da reunião</label><input id="f-reuniaodata" type="date" value="${escapeHTML(lead.reuniaoData)}"></div>
+      <div class="field"><label>Horário</label><input id="f-reuniaohora" type="time" value="${escapeHTML(lead.reuniaoHora)}"></div>
+    </div>
+    <div class="field"><label>Observações da reunião</label><input id="f-reuniaoobs" placeholder="Link da call, pauta, etc." value="${escapeHTML(lead.reuniaoObs)}"></div>
+  `;
+}
+
+function renderModalClinica(lead){
+  return `
+    <div class="field-row">
+      <div class="field"><label>Nome da clínica</label><input id="f-clinica" value="${escapeHTML(lead.clinica)}"></div>
+      <div class="field"><label>Cidade</label><input id="f-cidade" value="${escapeHTML(lead.cidade)}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Instagram</label><input id="f-instagram" placeholder="@perfil" value="${escapeHTML(lead.instagram)}"></div>
+      <div class="field"><label>Nº de cadeiras / dentistas</label><input id="f-numcadeiras" value="${escapeHTML(lead.numCadeiras)}"></div>
+    </div>
+    <div class="section-title" style="margin-top:6px">Marketing atual</div>
+    <div class="field-row">
+      <div class="field"><label>Investimento atual em mkt (R$/mês)</label><input id="f-investimento" type="number" step="0.01" value="${lead.investimentoMkt||0}"></div>
+      <div class="field"><label>Canal onde investe hoje</label><input id="f-canalmkt" placeholder="Meta Ads, Google, indicação..." value="${escapeHTML(lead.canalMkt)}"></div>
+    </div>
+    <div class="field"><label>Agência / time atual responsável pelo mkt</label><input id="f-agencia" value="${escapeHTML(lead.agenciaAtual)}"></div>
+    <div class="section-title" style="margin-top:6px">Contrato Falcon</div>
+    <div class="field-row">
+      <div class="field"><label>Plano / produto contratado</label><input id="f-plano" placeholder="Essencial, Profissional, Premium..." value="${escapeHTML(lead.plano)}"></div>
+      <div class="field"><label>Mensalidade Falcon (R$)</label><input id="f-valormensalidade" type="number" step="0.01" value="${lead.valorMensalidade||0}"></div>
+    </div>
+    ${lead.stage==='fechado' ? `
+      <div class="field"><label>Cliente fechado em</label><input value="${formatDate(lead.dataFechamento)}" disabled></div>
+      <div class="field-row">
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="f-emrisco" ${lead.emRisco?'checked':''} style="width:17px;height:17px;"> Cliente em risco
+          </label>
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="f-cancelado" ${lead.cancelado?'checked':''} style="width:17px;height:17px;"> Cliente cancelado
+          </label>
+        </div>
+      </div>
+      <div class="field-hint">O acompanhamento de implantação (7 fases) deste cliente fica na aba 🚀 Jornada.</div>
+    ` : ''}
+  `;
+}
+
+function renderModalJornada(lead){
+  const faseAtualIdx = jornadaFaseIndex(lead);
+  const fAtual = JORNADA_FASES[faseAtualIdx];
+
+  let stepper = '<div class="jornada-stepper">';
+  JORNADA_FASES.forEach((f,i)=>{
+    const cls = i<faseAtualIdx ? 'past' : (i===faseAtualIdx ? 'current' : 'future');
+    stepper += `<button type="button" class="jornada-seg ${cls}" data-fase="${f.key}" style="--c:${f.color}" title="${escapeHTML(f.label)}">${i+1}</button>`;
+  });
+  stepper += '</div>';
+
+  let html = `
+    <div class="field-hint" style="margin-bottom:10px">Clique numa fase para defini-la como a <strong>fase atual</strong> deste cliente e marque os itens conforme avança. Cada cliente fica na sua própria fase.</div>
+    ${stepper}
+    <div class="jornada-current-pill" style="--c:${fAtual.color}">
+      <span class="dot"></span> Fase ${faseAtualIdx+1} de 7 · <strong>${escapeHTML(fAtual.label)}</strong>
+    </div>`;
+
+  JORNADA_FASES.forEach((f,i)=>{
+    const prog = jornadaFaseProgress(lead, f.key);
+    const marc = (lead.jornada||{})[f.key] || {};
+    const isAtual = i===faseAtualIdx;
+    html += `
+      <div class="jornada-fase ${isAtual?'atual':''}" style="--c:${f.color}">
+        <div class="jornada-fase-head">
+          <div class="jornada-fase-title"><span class="dot"></span> ${i+1}. ${escapeHTML(f.label)}</div>
+          <div class="jornada-fase-prog">${prog.done}/${prog.total}</div>
+        </div>
+        <div class="jornada-fase-obj">${escapeHTML(f.objetivo)}</div>
+        ${f.itens.map((it,idx)=>`
+          <label class="checklist-row ${marc[idx]?'done':''}">
+            <input type="checkbox" class="jornada-check" data-fase="${f.key}" data-idx="${idx}" ${marc[idx]?'checked':''}> ${escapeHTML(it)}
+          </label>`).join('')}
+        ${isAtual ? `<div class="jornada-atual-badge">✓ Fase atual deste cliente</div>` : `<button type="button" class="btn btn-small btn-secondary jornada-set-atual" data-fase="${f.key}" style="margin-top:10px">Definir como fase atual</button>`}
+      </div>`;
+  });
+  return html;
+}
+
+function renderModalFinanceiro(lead){
+  if(!modalFinanceUnlocked){
+    return `
+      <div class="password-gate">
+        <div class="lock-icon">🔒</div>
+        <p>Esta área contém informações financeiras do cliente. Digite a senha para continuar.</p>
+        <input type="password" id="modal-finance-password" placeholder="Senha">
+        <button class="btn btn-primary" id="modal-finance-unlock">Entrar</button>
+        <div class="error-text">${escapeHTML(modalFinanceError)}</div>
+      </div>`;
+  }
+  const entries = lead.financeiro || [];
+  const aReceber = entries.filter(e=>e.tipo==='receber' && e.status!=='pago').reduce((s,e)=>s+Number(e.valor||0),0);
+  const aPagar = entries.filter(e=>e.tipo==='pagar' && e.status!=='pago').reduce((s,e)=>s+Number(e.valor||0),0);
+  let html = `
+    <div class="summary-row">
+      <div class="summary-card"><div class="label">A receber (pendente)</div><div class="value positive">${formatCurrency(aReceber)}</div></div>
+      <div class="summary-card"><div class="label">A pagar (pendente)</div><div class="value negative">${formatCurrency(aPagar)}</div></div>
+    </div>`;
+  if(entries.length===0){
+    html += `<div class="empty-state" style="padding:24px"><h3>Nenhum lançamento</h3><p>Adicione contas a pagar ou a receber relacionadas a este cliente.</p></div>`;
+  } else {
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr>
+      <th>Descrição</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th>
+    </tr></thead><tbody>`;
+    entries.forEach(e=>{
+      html += `<tr>
+        <td>${escapeHTML(e.descricao)}</td>
+        <td>${e.tipo==='receber'?'A receber':'A pagar'}</td>
+        <td>${formatCurrency(e.valor)}</td>
+        <td>${formatDate(e.vencimento)}</td>
+        <td><span class="status-pill status-${e.status}">${e.status==='pago'?'Pago':e.status==='atrasado'?'Atrasado':'Pendente'}</span></td>
+        <td>
+          ${e.status!=='pago' ? `<button class="btn btn-small btn-secondary mark-paid-btn" data-id="${e.id}">Marcar pago</button>` : ''}
+          <button class="btn btn-small btn-danger del-finance-entry-btn" data-id="${e.id}" data-key="${pendingDeleteKey==='entry_'+e.id ? 'confirm' : ''}">${pendingDeleteKey==='entry_'+e.id ? 'Confirmar?' : 'Excluir'}</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+  html += `
+    <div class="section-title">Novo lançamento</div>
+    <div class="add-finance-form">
+      <div class="field"><label>Descrição</label><input id="nf-descricao" placeholder="Ex: Mensalidade junho"></div>
+      <div class="field field-small"><label>Tipo</label>
+        <select id="nf-tipo"><option value="receber">A receber</option><option value="pagar">A pagar</option></select>
+      </div>
+      <div class="field field-small"><label>Valor (R$)</label><input id="nf-valor" type="number" step="0.01"></div>
+      <div class="field field-small"><label>Vencimento</label><input id="nf-vencimento" type="date" value="${todayISO()}"></div>
+      <button class="btn btn-primary" id="add-finance-entry-btn">Adicionar</button>
+    </div>`;
+  return html;
+}
+
+/* captura os campos da aba ativa para o objeto em edição */
+function captureModalForm(){
+  const lead = currentModalLead;
+  if(!lead) return;
+  if(modalActiveTab==='geral'){
+    lead.dentista = val('#f-dentista');
+    lead.telefone = val('#f-telefone');
+    lead.email = val('#f-email');
+    lead.origem = val('#f-origem');
+    lead.stage = val('#f-stage');
+    lead.observacoes = val('#f-observacoes');
+    lead.reuniaoData = val('#f-reuniaodata');
+    lead.reuniaoHora = val('#f-reuniaohora');
+    lead.reuniaoObs = val('#f-reuniaoobs');
+    const propostaEl = document.querySelector('#f-propostaenviada');
+    if(propostaEl) lead.propostaEnviada = propostaEl.checked;
+    if(isColab()){ lead.responsavelId = colabUserId; }
+    else { const respEl = document.querySelector('#f-responsavel'); if(respEl) lead.responsavelId = respEl.value; }
+  } else if(modalActiveTab==='clinica'){
+    lead.clinica = val('#f-clinica');
+    lead.cidade = val('#f-cidade');
+    lead.instagram = val('#f-instagram');
+    lead.numCadeiras = val('#f-numcadeiras');
+    lead.investimentoMkt = numVal('#f-investimento');
+    lead.canalMkt = val('#f-canalmkt');
+    lead.agenciaAtual = val('#f-agencia');
+    lead.plano = val('#f-plano');
+    lead.valorMensalidade = numVal('#f-valormensalidade');
+    const riscoEl = document.querySelector('#f-emrisco');
+    if(riscoEl) lead.emRisco = riscoEl.checked;
+    const canceladoEl = document.querySelector('#f-cancelado');
+    if(canceladoEl) lead.cancelado = canceladoEl.checked;
+  }
+}
+
+function persistLead(){
+  const lead = currentModalLead;
+  const idx = state.leads.findIndex(l=>l.id===lead.id);
+  if(idx>=0) state.leads[idx] = lead;
+  else state.leads.push(lead);
+  saveData();
+}
+
+function attachModalEvents(){
+  document.getElementById('modal-close').addEventListener('click', ()=>{ closeModal(); render(); });
+  document.getElementById('modal-overlay').addEventListener('click', e=>{
+    if(e.target.id==='modal-overlay'){ closeModal(); render(); }
+  });
+
+  document.querySelectorAll('.modal-tabs .tab').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      captureModalForm();
+      modalActiveTab = t.dataset.tab;
+      modalFinanceError = '';
+      renderModal();
+    });
+  });
+
+  document.getElementById('save-lead-btn').addEventListener('click', ()=>{
+    captureModalForm();
+    const lead = currentModalLead;
+    if(lead.reuniaoData && lead.stage!=='fechado'){
+      lead.stage = 'agendado';
+    }
+    if(lead.stage==='fechado' && !lead.dataFechamento){
+      lead.dataFechamento = new Date().toISOString();
+    }
+    if(lead.stage!=='fechado'){
+      lead.dataFechamento = '';
+    }
+    if(lead.stage !== modalOriginalStage){
+      lead.stageChangedAt = new Date().toISOString();
+    }
+    persistLead();
+    closeModal();
+    render();
+  });
+
+  const delBtn = document.getElementById('delete-lead-btn');
+  if(delBtn){
+    if(pendingDeleteKey==='lead_'+currentModalLead.id){
+      delBtn.textContent = 'Confirmar exclusão?';
+      delBtn.classList.add('confirm');
+    }
+    delBtn.addEventListener('click', ()=>{
+      const key = 'lead_'+currentModalLead.id;
+      if(pendingDeleteKey===key){
+        state.leads = state.leads.filter(l=>l.id!==currentModalLead.id);
+        pendingDeleteKey = null;
+        saveData();
+        closeModal();
+        render();
+      } else {
+        pendingDeleteKey = key;
+        renderModal();
+      }
+    });
+  }
+
+  // Financeiro tab
+  const unlockBtn = document.getElementById('modal-finance-unlock');
+  if(unlockBtn){
+    unlockBtn.addEventListener('click', ()=>{
+      const pwd = val('#modal-finance-password');
+      if(pwd===FINANCE_PASSWORD){
+        modalFinanceUnlocked = true;
+        modalFinanceError = '';
+      } else {
+        modalFinanceError = 'Senha incorreta.';
+      }
+      renderModal();
+    });
+    const pwdInput = document.getElementById('modal-finance-password');
+    pwdInput.addEventListener('keydown', e=>{ if(e.key==='Enter') unlockBtn.click(); });
+  }
+
+  const addFinanceBtn = document.getElementById('add-finance-entry-btn');
+  if(addFinanceBtn){
+    addFinanceBtn.addEventListener('click', ()=>{
+      const descricao = val('#nf-descricao').trim();
+      const valor = numVal('#nf-valor');
+      if(!descricao || !valor){ return; }
+      currentModalLead.financeiro = currentModalLead.financeiro || [];
+      currentModalLead.financeiro.push({
+        id: uid('fin'), descricao, tipo: val('#nf-tipo'), valor,
+        vencimento: val('#nf-vencimento'), status: 'pendente'
+      });
+      persistLead();
+      renderModal();
+    });
+  }
+
+  document.querySelectorAll('.mark-paid-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const entry = (currentModalLead.financeiro||[]).find(e=>e.id===b.dataset.id);
+      if(entry){ entry.status='pago'; persistLead(); renderModal(); }
+    });
+  });
+
+  document.querySelectorAll('.del-finance-entry-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const key = 'entry_'+b.dataset.id;
+      if(pendingDeleteKey===key){
+        currentModalLead.financeiro = (currentModalLead.financeiro||[]).filter(e=>e.id!==b.dataset.id);
+        pendingDeleteKey = null;
+        persistLead();
+      } else {
+        pendingDeleteKey = key;
+      }
+      renderModal();
+    });
+  });
+  // Jornada do cliente
+  document.querySelectorAll('.jornada-seg, .jornada-set-atual').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      currentModalLead.jornadaFase = b.dataset.fase;
+      persistLead();
+      renderModal();
+    });
+  });
+  document.querySelectorAll('.jornada-check').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const fase = cb.dataset.fase, idx = cb.dataset.idx;
+      currentModalLead.jornada = currentModalLead.jornada || {};
+      currentModalLead.jornada[fase] = currentModalLead.jornada[fase] || {};
+      currentModalLead.jornada[fase][idx] = cb.checked;
+      persistLead();
+      renderModal();
+    });
+  });
+}
+
+/* ============================================================
+   PÁGINA: BASE DE CLÍNICAS
+   ============================================================ */
+function renderClinicas(){
+  const content = document.getElementById('page-content');
+  if(state.clinics.length===0){
+    content.innerHTML = `<div class="empty-state"><h3>Nenhuma clínica cadastrada</h3><p>Use o botão "+ Nova Clínica" para começar a montar a base.</p></div>`;
+    return;
+  }
+  content.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>
+    <th>Clínica</th><th>Cidade</th><th>Responsável</th><th>Telefone</th><th>Instagram</th><th>Status</th><th></th>
+  </tr></thead><tbody>
+    ${state.clinics.map(c=>`
+      <tr>
+        <td><strong>${escapeHTML(c.nome)}</strong></td>
+        <td>${escapeHTML(c.cidade)}</td>
+        <td>${escapeHTML(c.dentistaResponsavel)}</td>
+        <td>${escapeHTML(c.telefone)}</td>
+        <td>${escapeHTML(c.instagram)}</td>
+        <td><span class="status-pill status-${c.status}">${CLINIC_STATUS.find(s=>s.key===c.status)?.label || c.status}</span></td>
+        <td><button class="btn btn-small btn-secondary edit-clinic-btn" data-id="${c.id}">Editar</button></td>
+      </tr>`).join('')}
+  </tbody></table></div>`;
+
+  document.querySelectorAll('.edit-clinic-btn').forEach(b=>b.addEventListener('click', ()=>openClinicForm(b.dataset.id)));
+}
+
+function openClinicForm(id){
+  const clinic = id ? state.clinics.find(c=>c.id===id) : {
+    id: uid('clinic'), nome:'', cidade:'', endereco:'', telefone:'', instagram:'',
+    dentistaResponsavel:'', numCadeiras:'', status:'prospect', observacoes:''
+  };
+  openFormModal({
+    title: id ? 'Editar clínica' : 'Nova clínica',
+    data: clinic,
+    fields: [
+      {key:'nome', label:'Nome da clínica', type:'text'},
+      {key:'dentistaResponsavel', label:'Dentista responsável', type:'text'},
+      {key:'cidade', label:'Cidade', type:'text'},
+      {key:'endereco', label:'Endereço', type:'text'},
+      {key:'telefone', label:'Telefone', type:'text'},
+      {key:'instagram', label:'Instagram', type:'text'},
+      {key:'numCadeiras', label:'Nº de cadeiras / dentistas', type:'text'},
+      {key:'status', label:'Status', type:'select', options: CLINIC_STATUS.map(s=>({value:s.key,label:s.label}))},
+      {key:'observacoes', label:'Observações', type:'textarea'},
+    ],
+    onSave: data=>{
+      const idx = state.clinics.findIndex(c=>c.id===data.id);
+      if(idx>=0) state.clinics[idx]=data; else state.clinics.push(data);
+      saveData(); render();
+    },
+    onDelete: id ? ()=>{
+      state.clinics = state.clinics.filter(c=>c.id!==id);
+      saveData(); render();
+    } : null
+  });
+}
+
+/* ============================================================
+   PÁGINA: FINANCEIRO (GERAL)
+   ============================================================ */
+function renderFinanceiro(){
+  const content = document.getElementById('page-content');
+  if(!financeUnlocked){
+    content.innerHTML = `
+      <div class="password-gate" style="max-width:380px;margin:60px auto;">
+        <div class="lock-icon">🔒</div>
+        <p>A área financeira é restrita. Digite a senha de acesso para continuar.</p>
+        <input type="password" id="finance-page-password" placeholder="Senha">
+        <button class="btn btn-primary" id="finance-page-unlock">Entrar</button>
+        <div class="error-text">${escapeHTML(financeError)}</div>
+      </div>`;
+    document.getElementById('finance-page-unlock').addEventListener('click', ()=>{
+      const pwd = val('#finance-page-password');
+      if(pwd===FINANCE_PASSWORD){ financeUnlocked = true; financeError=''; render(); }
+      else { financeError = 'Senha incorreta.'; renderFinanceiro(); }
+    });
+    document.getElementById('finance-page-password').addEventListener('keydown', e=>{
+      if(e.key==='Enter') document.getElementById('finance-page-unlock').click();
+    });
+    return;
+  }
+
+  const clientes = state.leads.filter(l=>l.stage==='fechado');
+  const mrr = clientes.reduce((s,c)=>s+Number(c.valorMensalidade||0),0);
+
+  let totalReceberClientes = 0, totalPagarClientes = 0;
+  state.leads.forEach(l=>{
+    (l.financeiro||[]).forEach(e=>{
+      if(e.status==='pago') return;
+      if(e.tipo==='receber') totalReceberClientes += Number(e.valor||0);
+      else totalPagarClientes += Number(e.valor||0);
+    });
+  });
+  let totalReceberGeral = 0, totalPagarGeral = 0;
+  state.financeGeral.forEach(e=>{
+    if(e.status==='pago') return;
+    if(e.tipo==='receber') totalReceberGeral += Number(e.valor||0);
+    else totalPagarGeral += Number(e.valor||0);
+  });
+
+  let html = `<div class="summary-row">
+    <div class="summary-card"><div class="label">MRR (clientes fechados)</div><div class="value">${formatCurrency(mrr)}</div></div>
+    <div class="summary-card"><div class="label">A receber (clientes)</div><div class="value positive">${formatCurrency(totalReceberClientes)}</div></div>
+    <div class="summary-card"><div class="label">A pagar (clientes)</div><div class="value negative">${formatCurrency(totalPagarClientes)}</div></div>
+    <div class="summary-card"><div class="label">A receber (geral)</div><div class="value positive">${formatCurrency(totalReceberGeral)}</div></div>
+    <div class="summary-card"><div class="label">A pagar (geral)</div><div class="value negative">${formatCurrency(totalPagarGeral)}</div></div>
+  </div>`;
+
+  html += `<div class="section-title">Contas gerais (a pagar / a receber)</div>`;
+  if(state.financeGeral.length===0){
+    html += `<div class="empty-state" style="padding:24px"><h3>Nenhum lançamento geral</h3><p>Use "+ Nova Conta" para registrar contas da operação Falcon.</p></div>`;
+  } else {
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr>
+      <th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th>
+    </tr></thead><tbody>`;
+    state.financeGeral.forEach(e=>{
+      html += `<tr>
+        <td>${escapeHTML(e.descricao)}</td>
+        <td>${escapeHTML(e.categoria||'-')}</td>
+        <td>${e.tipo==='receber'?'A receber':'A pagar'}</td>
+        <td>${formatCurrency(e.valor)}</td>
+        <td>${formatDate(e.vencimento)}</td>
+        <td><span class="status-pill status-${e.status}">${e.status==='pago'?'Pago':e.status==='atrasado'?'Atrasado':'Pendente'}</span></td>
+        <td>
+          ${e.status!=='pago' ? `<button class="btn btn-small btn-secondary mark-paid-geral-btn" data-id="${e.id}">Marcar pago</button>` : ''}
+          <button class="btn btn-small btn-secondary edit-finance-geral-btn" data-id="${e.id}">Editar</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  html += `<div class="section-title">Mensalidades de clientes (MRR)</div>`;
+  if(clientes.length===0){
+    html += `<div class="empty-state" style="padding:24px"><h3>Sem clientes fechados</h3><p>O MRR aparece aqui quando houver clientes fechados com mensalidade definida.</p></div>`;
+  } else {
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr>
+      <th>Clínica</th><th>Plano</th><th>Mensalidade</th><th>Cliente desde</th>
+    </tr></thead><tbody>`;
+    clientes.forEach(c=>{
+      html += `<tr>
+        <td><strong>${escapeHTML(c.clinica||'-')}</strong></td>
+        <td>${escapeHTML(c.plano||'-')}</td>
+        <td>${formatCurrency(c.valorMensalidade)}</td>
+        <td>${formatDate(c.dataFechamento)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  content.innerHTML = html;
+
+  document.querySelectorAll('.mark-paid-geral-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const e = state.financeGeral.find(x=>x.id===b.dataset.id);
+      if(e){ e.status='pago'; saveData(); renderFinanceiro(); }
+    });
+  });
+  document.querySelectorAll('.edit-finance-geral-btn').forEach(b=>{
+    b.addEventListener('click', ()=>openFinanceGeralForm(b.dataset.id));
+  });
+}
+
+function openFinanceGeralForm(id){
+  const entry = id ? state.financeGeral.find(e=>e.id===id) : {
+    id: uid('fin'), descricao:'', categoria:'', tipo:'pagar', valor:0, vencimento:todayISO(), status:'pendente'
+  };
+  openFormModal({
+    title: id ? 'Editar lançamento' : 'Novo lançamento financeiro',
+    data: entry,
+    fields: [
+      {key:'descricao', label:'Descrição', type:'text'},
+      {key:'categoria', label:'Categoria', type:'text', placeholder:'Ex: Tráfego pago, Folha, Ferramentas...'},
+      {key:'tipo', label:'Tipo', type:'select', options:[{value:'receber',label:'A receber'},{value:'pagar',label:'A pagar'}]},
+      {key:'valor', label:'Valor (R$)', type:'number'},
+      {key:'vencimento', label:'Vencimento', type:'date'},
+      {key:'status', label:'Status', type:'select', options:[{value:'pendente',label:'Pendente'},{value:'pago',label:'Pago'},{value:'atrasado',label:'Atrasado'}]},
+    ],
+    onSave: data=>{
+      data.valor = Number(data.valor)||0;
+      const idx = state.financeGeral.findIndex(e=>e.id===data.id);
+      if(idx>=0) state.financeGeral[idx]=data; else state.financeGeral.push(data);
+      saveData(); render();
+    },
+    onDelete: id ? ()=>{
+      state.financeGeral = state.financeGeral.filter(e=>e.id!==id);
+      saveData(); render();
+    } : null
+  });
+}
+
+/* ============================================================
+   PÁGINA: EQUIPE
+   ============================================================ */
+function renderEquipe(){
+  const content = document.getElementById('page-content');
+  if(state.team.length===0){
+    content.innerHTML = `<div class="empty-state"><h3>Nenhum membro cadastrado</h3><p>Use "+ Novo Membro" para montar o time da Falcon.</p></div>`;
+    return;
+  }
+  content.innerHTML = `<div class="card-grid">${state.team.map(m=>`
+    <div class="team-card">
+      <div class="avatar">${escapeHTML((m.nome||'?').slice(0,1).toUpperCase())}</div>
+      <div class="name">${escapeHTML(m.nome)}</div>
+      <div class="role">${escapeHTML(m.cargo)}</div>
+      <div class="meta-line">${escapeHTML(m.email||'')}</div>
+      <div class="meta-line">${escapeHTML(m.telefone||'')}</div>
+      <div class="actions">
+        <button class="btn btn-small btn-secondary edit-team-btn" data-id="${m.id}">Editar</button>
+      </div>
+    </div>`).join('')}</div>`;
+
+  document.querySelectorAll('.edit-team-btn').forEach(b=>b.addEventListener('click', ()=>openTeamForm(b.dataset.id)));
+}
+
+function openTeamForm(id){
+  const member = id ? state.team.find(m=>m.id===id) : {
+    id: uid('team'), nome:'', cargo:CARGOS[0], email:'', telefone:'', senha:''
+  };
+  openFormModal({
+    title: id ? 'Editar membro' : 'Novo membro da equipe',
+    data: member,
+    fields: [
+      {key:'nome', label:'Nome', type:'text'},
+      {key:'cargo', label:'Função', type:'select', options: CARGOS.map(c=>({value:c,label:c}))},
+      {key:'email', label:'E-mail', type:'text'},
+      {key:'telefone', label:'Telefone', type:'text'},
+      {key:'senha', label:'Senha de acesso ao CRM', type:'text', placeholder:'Defina a senha de login deste usuário'},
+    ],
+    onSave: data=>{
+      const idx = state.team.findIndex(m=>m.id===data.id);
+      if(idx>=0) state.team[idx]=data; else state.team.push(data);
+      saveData(); render();
+    },
+    onDelete: id ? ()=>{
+      state.team = state.team.filter(m=>m.id!==id);
+      saveData(); render();
+    } : null
+  });
+}
+
+/* ============================================================
+   PÁGINA: TAREFAS
+   Regra de visibilidade: uma tarefa só aparece para quem a criou
+   e para o responsável por ela (ou para o CEO, que acompanha tudo).
+   ============================================================ */
+function taskVisibleTo(task, user){
+  if(!user) return false;
+  if(user.cargo === 'CEO') return true;
+  return task.criadoPorId === user.id || task.responsavelId === user.id;
+}
+
+function teamMemberName(id){
+  const m = state.team.find(t=>t.id===id);
+  return m ? m.nome : '—';
+}
+
+function renderTarefas(){
+  const content = document.getElementById('page-content');
+  const me = getCurrentUser();
+
+  if(state.team.length===0){
+    content.innerHTML = `<div class="empty-state"><h3>Cadastre a equipe primeiro</h3><p>Vá em "Equipe" e adicione os membros antes de criar tarefas.</p></div>`;
+    return;
+  }
+
+  if(!me){
+    content.innerHTML = `<div class="empty-state"><h3>Selecione quem é você</h3><p>No menu lateral, em "Você é", escolha seu nome. Assim o sistema mostra só as tarefas que você criou ou que são suas — ninguém mais vê.</p></div>`;
+    return;
+  }
+
+  const visible = isColab()
+    ? state.tasks.filter(t=>t.responsavelId===colabUserId || t.criadoPorId===colabUserId)
+    : state.tasks.filter(t=>taskVisibleTo(t, me));
+
+  let html = '';
+  if(!isColab() && me.cargo==='CEO'){
+    html += `<div class="hint-banner">💡 Como CEO, você vê todas as tarefas da equipe. Os demais membros só veem tarefas que criaram ou das quais são responsáveis.</div>`;
+  } else {
+    html += `<div class="hint-banner">💡 Aqui aparecem só as tarefas que você criou ou para as quais você é o responsável.</div>`;
+  }
+
+  if(visible.length===0){
+    html += `<div class="empty-state"><h3>Nenhuma tarefa por aqui</h3><p>Use "+ Nova Tarefa" para criar a primeira.</p></div>`;
+    content.innerHTML = html;
+    return;
+  }
+
+  const ordemStatus = {pendente:0, andamento:1, concluida:2};
+  const sorted = [...visible].sort((a,b)=>{
+    if(ordemStatus[a.status] !== ordemStatus[b.status]) return ordemStatus[a.status]-ordemStatus[b.status];
+    return (a.prazo||'9999-99-99').localeCompare(b.prazo||'9999-99-99');
+  });
+
+  const now = todayISO();
+  html += `<div class="table-wrap"><table class="data-table"><thead><tr>
+    <th>Tarefa</th><th>Vinculado a</th><th>Responsável</th><th>Criado por</th><th>Prazo</th><th>Prioridade</th><th>Status</th><th></th>
+  </tr></thead><tbody>`;
+  sorted.forEach(t=>{
+    const lead = t.leadId ? state.leads.find(l=>l.id===t.leadId) : null;
+    const atrasada = t.prazo && t.status!=='concluida' && t.prazo < now;
+    const prio = TASK_PRIORIDADE.find(p=>p.key===t.prioridade) || TASK_PRIORIDADE[1];
+    const stat = TASK_STATUS.find(s=>s.key===t.status) || TASK_STATUS[0];
+    html += `<tr>
+      <td>
+        <strong>${escapeHTML(t.titulo)}</strong>
+        ${t.descricao ? `<div style="color:var(--text-muted);font-size:12px;margin-top:2px">${escapeHTML(t.descricao)}</div>` : ''}
+      </td>
+      <td>${lead ? escapeHTML(lead.clinica || lead.dentista || '-') : '-'}</td>
+      <td>${escapeHTML(teamMemberName(t.responsavelId))}</td>
+      <td>${escapeHTML(teamMemberName(t.criadoPorId))}</td>
+      <td style="${atrasada?'color:var(--danger);font-weight:700':''}">${formatDate(t.prazo)}</td>
+      <td><span class="badge badge-prioridade-${prio.key}">${prio.label}</span></td>
+      <td><span class="status-pill status-${stat.key}">${stat.label}</span></td>
+      <td style="white-space:nowrap">
+        ${t.status!=='concluida' ? `<button class="btn btn-small btn-secondary mark-task-done-btn" data-id="${t.id}">Concluir</button>` : ''}
+        <button class="btn btn-small btn-secondary edit-task-btn" data-id="${t.id}">Editar</button>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+
+  content.innerHTML = html;
+
+  document.querySelectorAll('.mark-task-done-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const t = state.tasks.find(x=>x.id===b.dataset.id);
+      if(t){ t.status='concluida'; saveData(); renderTarefas(); }
+    });
+  });
+  document.querySelectorAll('.edit-task-btn').forEach(b=>{
+    b.addEventListener('click', ()=>openTaskForm(b.dataset.id));
+  });
+}
+
+function openTaskForm(id){
+  const me = getCurrentUser();
+  if(!me) return;
+  const task = id ? state.tasks.find(t=>t.id===id) : {
+    id: uid('task'), titulo:'', descricao:'', responsavelId: me.id, leadId:'',
+    prazo: todayISO(), prioridade:'media', status:'pendente',
+    criadoPorId: me.id, createdAt: new Date().toISOString()
+  };
+  const leadOptions = [{value:'', label:'Nenhum (tarefa geral)'}].concat(
+    state.leads.map(l=>({value:l.id, label:(l.clinica || l.dentista || 'Lead sem nome')}))
+  );
+  openFormModal({
+    title: id ? 'Editar tarefa' : 'Nova tarefa',
+    data: task,
+    fields: [
+      {key:'titulo', label:'Título da tarefa', type:'text', placeholder:'Ex: Ligar para Dr. João'},
+      {key:'descricao', label:'Descrição', type:'textarea', placeholder:'Detalhes do que precisa ser feito...'},
+      {key:'responsavelId', label:'Responsável', type:'select', options: state.team.map(m=>({value:m.id, label:m.nome+' ('+m.cargo+')'}))},
+      {key:'leadId', label:'Vincular a um lead/cliente (opcional)', type:'select', options: leadOptions},
+      {key:'prazo', label:'Prazo', type:'date'},
+      {key:'prioridade', label:'Prioridade', type:'select', options: TASK_PRIORIDADE.map(p=>({value:p.key,label:p.label}))},
+      {key:'status', label:'Status', type:'select', options: TASK_STATUS.map(s=>({value:s.key,label:s.label}))},
+    ],
+    onSave: data=>{
+      data.criadoPorId = task.criadoPorId;
+      const idx = state.tasks.findIndex(t=>t.id===data.id);
+      if(idx>=0) state.tasks[idx]=data; else state.tasks.push(data);
+      saveData(); render();
+    },
+    onDelete: id ? ()=>{
+      state.tasks = state.tasks.filter(t=>t.id!==id);
+      saveData(); render();
+    } : null
+  });
+}
+
+/* ============================================================
+   PÁGINA: OPERAÇÕES / IMPLANTAÇÃO
+   Checklist de onboarding para cada cliente fechado.
+   ============================================================ */
+let onboardingModalLead = null;
+
+function onboardingProgress(lead){
+  const ob = lead.onboarding || {};
+  const done = ONBOARDING_STEPS.filter(s=>ob[s.key]).length;
+  return Math.round((done / ONBOARDING_STEPS.length) * 100);
+}
+
+function renderOperacoes(){
+  const content = document.getElementById('page-content');
+  const clientes = state.leads.filter(l=>l.stage==='fechado');
+  if(clientes.length===0){
+    content.innerHTML = `<div class="empty-state"><h3>Nenhum cliente em implantação</h3><p>Quando um lead for fechado no pipeline, ele aparece aqui com a jornada de implantação (7 fases).</p></div>`;
+    return;
+  }
+  content.innerHTML = `<div class="card-grid">${clientes.map(c=>{
+    const jt = jornadaTotal(c);
+    const pct = jt.pct;
+    const fiOp = jornadaFaseIndex(c);
+    const faOp = JORNADA_FASES[fiOp];
+    const fillClass = c.cancelado ? '' : (c.emRisco ? 'risk' : (pct===100 ? 'done' : ''));
+    let tag = '';
+    if(c.cancelado) tag = `<span class="status-pill status-cancelado">Cancelado</span>`;
+    else if(c.emRisco) tag = `<span class="status-pill status-risco">Em risco</span>`;
+    else if(pct===100) tag = `<span class="status-pill status-pago">Implantado</span>`;
+    else tag = `<span class="status-pill status-pendente">Em implantação</span>`;
+    return `
+    <div class="client-card" data-id="${c.id}" title="Abrir a Jornada do cliente">
+      <div class="top-row">
+        <div>
+          <div class="clinic-name">${escapeHTML(c.clinica || 'Sem clínica')}</div>
+          <div class="dentist-name">${escapeHTML(c.dentista || '')}${c.cidade ? ' · '+escapeHTML(c.cidade) : ''}</div>
+        </div>
+        ${tag}
+      </div>
+      <div class="card-jornada" style="cursor:pointer">
+        <span class="jornada-pill" style="background:${faOp.color}22;color:${faOp.color}"><span class="dot" style="background:${faOp.color}"></span>Fase ${fiOp+1}/7 · ${escapeHTML(faOp.label)}</span>
+      </div>
+      <div style="margin-top:14px">
+        <div class="progress-track"><div class="progress-fill ${fillClass}" style="width:${pct}%"></div></div>
+        <div class="progress-label"><span>${pct}% da jornada</span><span>${jt.done}/${jt.total} itens</span></div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+
+  document.querySelectorAll('.client-card').forEach(card=>{
+    card.addEventListener('click', ()=>openLeadModal(card.dataset.id, 'jornada'));
+  });
+}
+
+function openOnboardingModal(id){
+  const lead = state.leads.find(l=>l.id===id);
+  if(!lead) return;
+  lead.onboarding = lead.onboarding || {};
+  onboardingModalLead = lead;
+  renderOnboardingModal();
+}
+
+function closeOnboardingModal(){
+  onboardingModalLead = null;
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+function renderOnboardingModal(){
+  const root = document.getElementById('modal-root');
+  const lead = onboardingModalLead;
+  if(!lead){ root.innerHTML=''; return; }
+  const ob = lead.onboarding || {};
+  const pct = onboardingProgress(lead);
+  root.innerHTML = `
+    <div class="modal-overlay" id="onb-overlay">
+      <div class="modal modal-small">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title">${escapeHTML(lead.clinica || 'Cliente')}</div>
+            <div class="modal-subtitle">Checklist de implantação · ${pct}% concluído</div>
+          </div>
+          <button class="modal-close" id="onb-close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="progress-track" style="margin-bottom:16px"><div class="progress-fill ${pct===100?'done':''}" style="width:${pct}%"></div></div>
+          ${ONBOARDING_STEPS.map(s=>`
+            <label class="checklist-row ${ob[s.key]?'done':''}">
+              <input type="checkbox" data-step="${s.key}" ${ob[s.key]?'checked':''}> ${s.label}
+            </label>`).join('')}
+          <div class="section-title">Status do cliente</div>
+          <div class="field-row">
+            <div class="field">
+              <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="onb-emrisco" ${lead.emRisco?'checked':''} style="width:17px;height:17px;"> Em risco
+              </label>
+            </div>
+            <div class="field">
+              <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="onb-cancelado" ${lead.cancelado?'checked':''} style="width:17px;height:17px;"> Cancelado
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <span></span>
+          <button class="btn btn-primary" id="onb-save">Salvar</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('onb-close').addEventListener('click', ()=>{ closeOnboardingModal(); render(); });
+  document.getElementById('onb-overlay').addEventListener('click', e=>{
+    if(e.target.id==='onb-overlay'){ closeOnboardingModal(); render(); }
+  });
+  document.querySelectorAll('#onb-overlay [data-step]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      lead.onboarding = lead.onboarding || {};
+      lead.onboarding[cb.dataset.step] = cb.checked;
+      renderOnboardingModal();
+    });
+  });
+  document.getElementById('onb-save').addEventListener('click', ()=>{
+    lead.emRisco = document.getElementById('onb-emrisco').checked;
+    lead.cancelado = document.getElementById('onb-cancelado').checked;
+    const idx = state.leads.findIndex(l=>l.id===lead.id);
+    if(idx>=0) state.leads[idx] = lead;
+    saveData();
+    closeOnboardingModal();
+    render();
+  });
+}
+
+/* ============================================================
+   PÁGINA: DASHBOARD
+   ============================================================ */
+function renderDashboard(){
+  const content = document.getElementById('page-content');
+
+  // ---- Comercial ----
+  const leadsGerados = state.leads.length;
+  const reunioesAgendadas = state.leads.filter(l=>!!l.reuniaoData).length;
+  const diagnosticosRealizados = state.leads.filter(l=>['followup','morto','fechado'].includes(l.stage)).length;
+  const propostasEnviadas = state.leads.filter(l=>l.propostaEnviada).length;
+  const contratosFechados = state.leads.filter(l=>l.stage==='fechado').length;
+
+  // ---- Financeiro ----
+  const fechados = state.leads.filter(l=>l.stage==='fechado');
+  const clientesAtivos = fechados.filter(l=>!l.cancelado);
+  const clientesCancelados = fechados.filter(l=>l.cancelado);
+  const mrr = clientesAtivos.reduce((s,c)=>s+Number(c.valorMensalidade||0),0);
+  const ticketMedio = clientesAtivos.length ? mrr / clientesAtivos.length : 0;
+  let inadimplencia = 0;
+  state.leads.forEach(l=>{
+    (l.financeiro||[]).forEach(e=>{ if(e.tipo==='receber' && e.status==='atrasado') inadimplencia += Number(e.valor||0); });
+  });
+  state.financeGeral.forEach(e=>{ if(e.tipo==='receber' && e.status==='atrasado') inadimplencia += Number(e.valor||0); });
+
+  // ---- Operação ----
+  const naoCancelados = fechados.filter(l=>!l.cancelado);
+  const clinicasAtivas = naoCancelados.filter(l=>jornadaTotal(l).pct===100 && !l.emRisco);
+  const clinicasImplantacao = naoCancelados.filter(l=>jornadaTotal(l).pct<100);
+  const clinicasPendencias = clinicasImplantacao.length;
+  const clinicasRisco = naoCancelados.filter(l=>l.emRisco);
+
+  let html = '';
+
+  const me = getCurrentUser();
+  if(me){
+    const minhasTarefas = state.tasks.filter(t=>t.responsavelId===me.id && t.status!=='concluida');
+    if(minhasTarefas.length>0){
+      html += `<div class="hint-banner">💡 Você tem <strong>${minhasTarefas.length}</strong> tarefa(s) pendente(s) atribuída(s) a você. <a href="#" id="dash-go-tasks" style="color:var(--accent-dark);font-weight:800;">Ver tarefas</a></div>`;
+    }
+  } else {
+    html += `<div class="hint-banner">💡 Selecione "Você é" no menu lateral para ver suas tarefas pessoais e liberar a página de Tarefas.</div>`;
+  }
+
+  html += `<div class="section-title" style="margin-top:0">Comercial</div>`;
+  html += `<div class="dashboard-grid">
+    <div class="summary-card"><div class="label">Leads gerados</div><div class="value">${leadsGerados}</div></div>
+    <div class="summary-card"><div class="label">Reuniões agendadas</div><div class="value">${reunioesAgendadas}</div></div>
+    <div class="summary-card"><div class="label">Diagnósticos realizados</div><div class="value">${diagnosticosRealizados}</div></div>
+    <div class="summary-card"><div class="label">Propostas enviadas</div><div class="value">${propostasEnviadas}</div></div>
+    <div class="summary-card"><div class="label">Contratos fechados</div><div class="value positive">${contratosFechados}</div></div>
+  </div>`;
+
+  html += `<div class="section-title">Financeiro</div>`;
+  html += `<div class="dashboard-grid">
+    <div class="summary-card"><div class="label">MRR</div><div class="value">${formatCurrency(mrr)}</div></div>
+    <div class="summary-card"><div class="label">Clientes ativos</div><div class="value positive">${clientesAtivos.length}</div></div>
+    <div class="summary-card"><div class="label">Clientes cancelados</div><div class="value negative">${clientesCancelados.length}</div></div>
+    <div class="summary-card"><div class="label">Inadimplência</div><div class="value negative">${formatCurrency(inadimplencia)}</div></div>
+    <div class="summary-card"><div class="label">Ticket médio</div><div class="value">${formatCurrency(ticketMedio)}</div></div>
+  </div>`;
+
+  html += `<div class="section-title">Operação</div>`;
+  html += `<div class="dashboard-grid">
+    <div class="summary-card"><div class="label">Clínicas em implantação</div><div class="value">${clinicasImplantacao.length}</div></div>
+    <div class="summary-card"><div class="label">Clínicas ativas</div><div class="value positive">${clinicasAtivas.length}</div></div>
+    <div class="summary-card"><div class="label">Clínicas com pendências</div><div class="value">${clinicasPendencias}</div></div>
+    <div class="summary-card"><div class="label">Clínicas em risco</div><div class="value negative">${clinicasRisco.length}</div></div>
+  </div>`;
+
+  html += `<div class="section-title">Jornada dos clientes</div>`;
+  html += `<div class="dashboard-grid">` + JORNADA_FASES.map(f=>{
+    const n = naoCancelados.filter(l=>(l.jornadaFase||'venda')===f.key).length;
+    return `<div class="summary-card" style="border-left:4px solid ${f.color};cursor:pointer" data-jfase="${f.key}"><div class="label">${escapeHTML(f.label)}</div><div class="value">${n}</div></div>`;
+  }).join('') + `</div>`;
+  html += `<div class="field-hint" style="margin-top:8px">Clique numa fase para ver esses clientes filtrados na página Clientes.</div>`;
+
+  if(state.financeGeral.length===0 && state.leads.every(l=>!(l.financeiro||[]).length)){
+    html += `<div class="field-hint" style="margin-top:18px">Os dados de inadimplência consideram lançamentos marcados como "Atrasado" no Financeiro (geral e por cliente).</div>`;
+  }
+
+  content.innerHTML = html;
+
+  const goTasks = document.getElementById('dash-go-tasks');
+  if(goTasks){
+    goTasks.addEventListener('click', e=>{
+      e.preventDefault();
+      currentPage = 'tarefas';
+      render();
+    });
+  }
+
+  document.querySelectorAll('[data-jfase]').forEach(el=>{
+    el.addEventListener('click', ()=>{ clientesFaseFilter = el.dataset.jfase; currentPage = 'clientes'; render(); });
+  });
+}
+
+/* ============================================================
+   MODAL GENÉRICO DE FORMULÁRIO (Clínicas, Equipe, Financeiro Geral)
+   ============================================================ */
+function openFormModal(config){
+  formModalConfig = {...config, data: {...config.data}};
+  pendingDeleteKey = null;
+  renderFormModal();
+}
+
+function renderField(field, value){
+  const id = 'ff-'+field.key;
+  if(field.type==='select'){
+    return `<div class="field"><label>${field.label}</label><select id="${id}">
+      ${field.options.map(o=>`<option value="${escapeHTML(o.value)}" ${value===o.value?'selected':''}>${escapeHTML(o.label)}</option>`).join('')}
+    </select></div>`;
+  }
+  if(field.type==='textarea'){
+    return `<div class="field"><label>${field.label}</label><textarea id="${id}">${escapeHTML(value)}</textarea></div>`;
+  }
+  if(field.type==='number'){
+    return `<div class="field"><label>${field.label}</label><input id="${id}" type="number" step="0.01" value="${value||0}"></div>`;
+  }
+  if(field.type==='date'){
+    return `<div class="field"><label>${field.label}</label><input id="${id}" type="date" value="${escapeHTML(value)}"></div>`;
+  }
+  if(field.type==='time'){
+    return `<div class="field"><label>${field.label}</label><input id="${id}" type="time" value="${escapeHTML(value)}"></div>`;
+  }
+  return `<div class="field"><label>${field.label}</label><input id="${id}" type="text" placeholder="${escapeHTML(field.placeholder||'')}" value="${escapeHTML(value)}"></div>`;
+}
+
+function renderFormModal(){
+  const root = document.getElementById('form-modal-root');
+  if(!formModalConfig){ root.innerHTML=''; return; }
+  const {title, fields, data, onDelete} = formModalConfig;
+  root.innerHTML = `
+    <div class="modal-overlay" id="form-modal-overlay">
+      <div class="modal modal-small">
+        <div class="modal-header">
+          <div class="modal-title">${title}</div>
+          <button class="modal-close" id="form-modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          ${fields.map(f=>renderField(f, data[f.key])).join('')}
+        </div>
+        <div class="modal-footer">
+          ${onDelete ? `<button class="btn btn-danger" id="form-delete-btn">${pendingDeleteKey==='form'?'Confirmar exclusão?':'Excluir'}</button>` : '<span></span>'}
+          <button class="btn btn-primary" id="form-save-btn">Salvar</button>
+        </div>
+      </div>
+    </div>`;
+
+  const close = ()=>{ formModalConfig=null; pendingDeleteKey=null; root.innerHTML=''; };
+  document.getElementById('form-modal-close').addEventListener('click', close);
+  document.getElementById('form-modal-overlay').addEventListener('click', e=>{
+    if(e.target.id==='form-modal-overlay') close();
+  });
+  document.getElementById('form-save-btn').addEventListener('click', ()=>{
+    const result = {...data};
+    fields.forEach(f=>{ result[f.key] = val('#ff-'+f.key); });
+    formModalConfig.onSave(result);
+    close();
+  });
+  const delBtn = document.getElementById('form-delete-btn');
+  if(delBtn){
+    delBtn.addEventListener('click', ()=>{
+      if(pendingDeleteKey==='form'){
+        formModalConfig.onDelete();
+        close();
+      } else {
+        pendingDeleteKey = 'form';
+        renderFormModal();
+      }
+    });
+  }
+}
+
+/* ============================================================
+   NAVEGAÇÃO E INICIALIZAÇÃO
+   ============================================================ */
+document.querySelectorAll('.nav-item').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    currentPage = b.dataset.page;
+    render();
+  });
+});
+
+/* ============================================================
+   AUTENTICAÇÃO (somente login do usuário do CRM)
+   ============================================================ */
+function showOverlay(){ document.querySelector('.app').style.display='none'; document.getElementById('auth-root').style.display='flex'; }
+function hideOverlay(){ document.querySelector('.app').style.display=''; document.getElementById('auth-root').style.display='none'; }
+
+function crmLogout(){ setCurrentUser(''); render(); }
+
+function renderCrmLoading(){
+  document.getElementById('auth-root').innerHTML = `
+    <div class="auth-screen"><div class="auth-card">
+      <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+      <div class="auth-title">Carregando...</div>
+      <p style="text-align:center;color:var(--text-muted);font-size:13px">Conectando ao banco de dados.</p>
+    </div></div>`;
+}
+
+function renderGateError(msg){
+  showOverlay();
+  document.getElementById('auth-root').innerHTML = `
+    <div class="auth-screen"><div class="auth-card">
+      <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+      <div class="auth-title">Quase lá</div>
+      <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:16px">${escapeHTML(msg)}</p>
+      <button class="btn btn-primary" id="gate-reload">Recarregar</button>
+    </div></div>`;
+  document.getElementById('gate-reload').addEventListener('click', ()=>location.reload());
+}
+
+function renderCrmGate(selectedId, msg){
+  const root = document.getElementById('auth-root');
+  if(state.team.length===0){
+    root.innerHTML = `
+      <div class="auth-screen"><div class="auth-card">
+        <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+        <div class="auth-title">Primeiro acesso</div>
+        <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:16px">Ainda não há usuários cadastrados. Entre para criar a equipe na página "Equipe" e definir a senha de cada usuário.</p>
+        <button class="btn btn-primary" id="crm-enter-empty">Entrar para configurar</button>
+      </div></div>`;
+    document.getElementById('crm-enter-empty').addEventListener('click', ()=>{ crmAuthed=true; setCurrentUser(''); gateRender(); });
+    return;
+  }
+  const sel = selectedId!==undefined ? selectedId : (currentUserId||'');
+  root.innerHTML = `
+    <div class="auth-screen"><div class="auth-card">
+      <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+      <div class="auth-title">Quem é você?</div>
+      <div class="field"><label>Usuário</label>
+        <select id="crm-user-select">
+          <option value="">Selecionar...</option>
+          ${state.team.map(m=>`<option value="${m.id}" ${m.id===sel?'selected':''}>${escapeHTML(m.nome)} (${escapeHTML(m.cargo)})</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Senha do usuário</label><input id="crm-user-pwd" type="password" placeholder="Senha do seu usuário no CRM"></div>
+      <button class="btn btn-primary" id="crm-enter-btn">Entrar</button>
+      <div class="error-text" style="text-align:center;min-height:18px">${msg?escapeHTML(msg):''}</div>
+    </div></div>`;
+  const enter = ()=>{
+    const id = val('#crm-user-select');
+    const pwd = val('#crm-user-pwd');
+    if(!id){ renderCrmGate(id, 'Selecione seu usuário.'); return; }
+    const m = state.team.find(x=>x.id===id);
+    if(!m){ renderCrmGate('', 'Usuário não encontrado.'); return; }
+    if(m.senha && pwd !== m.senha){ renderCrmGate(id, 'Senha incorreta.'); return; }
+    crmAuthed = true;
+    setCurrentUser(id);
+    gateRender();
+  };
+  document.getElementById('crm-enter-btn').addEventListener('click', enter);
+  document.getElementById('crm-user-pwd').addEventListener('keydown', e=>{ if(e.key==='Enter') enter(); });
+}
+
+function gateRender(){
+  // Sem login: sempre mostra o CRM.
+  hideOverlay();
+  render();
+}
+
+const logoutBtn = document.getElementById('logout-btn');
+if(logoutBtn) logoutBtn.addEventListener('click', crmLogout);
+
+// Sem login: abre direto no CRM. Dados locais na hora + sync de nuvem em 2º plano.
+crmAuthed = true;
+loadData();
+dataLoadedOnce = true;
+hideOverlay();
+render();
+if(firebaseReady && !syncStarted){ startCloudSync(); syncStarted = true; }
+</script>
+</body>
+</html>
