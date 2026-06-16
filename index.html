@@ -537,6 +537,8 @@ let clientesFaseFilter = '';
    ============================================================ */
 let viewMode = 'owner';          // 'owner' | 'colab'
 let colabUserId = '';            // id do colaborador logado no modo colaborador
+let authed = false;              // já passou pela tela de acesso?
+const OWNER_PASSWORD = 'gerevalorparaaspessoaseparaomundo';
 const COLAB_PAGES = ['pipeline','agenda','tarefas','clinicas'];
 function isColab(){ return viewMode === 'colab'; }
 function leadVisible(l){ return viewMode === 'owner' ? true : (!!l && l.responsavelId === colabUserId); }
@@ -670,8 +672,7 @@ function startCloudSync(){
     }
     setSyncStatus('Sincronizado às ' + nowT());
     if(currentModalLead || formModalConfig) return;
-    if(crmAuthed){ render(); }
-    else if(firstReconcile){ gateRender(); }
+    if(authed) render();
   }, err=>{
     console.error(err);
     setSyncStatus('Sem conexão com a nuvem — trabalhando offline');
@@ -728,31 +729,10 @@ function render(){
 
 function renderUserSwitcher(){
   const el = document.getElementById('user-switcher');
-  if(!el) return;
-  if(isColab()){ el.innerHTML = ''; return; }
-  const u = getCurrentUser();
-  if(u && crmAuthed){
-    el.innerHTML = `
-      <label>Conectado como</label>
-      <div class="current-user-box">
-        <div class="cu-name">${escapeHTML(u.nome)}</div>
-        <div class="cu-role">${escapeHTML(u.cargo)}</div>
-      </div>
-      <button id="crm-switch-user" style="margin-top:6px">Trocar usuário</button>`;
-    document.getElementById('crm-switch-user').addEventListener('click', crmLogout);
-  } else {
-    el.innerHTML = `
-      <label>Você é</label>
-      <select id="current-user-select">
-        <option value="">Selecionar...</option>
-        ${state.team.map(m=>`<option value="${m.id}" ${m.id===currentUserId?'selected':''}>${escapeHTML(m.nome)} (${escapeHTML(m.cargo)})</option>`).join('')}
-      </select>`;
-    const s = document.getElementById('current-user-select');
-    if(s) s.addEventListener('change', e=>{ setCurrentUser(e.target.value); render(); });
-  }
+  if(el) el.innerHTML = '';
 }
 
-/* ---- Controles de modo (Owner/CEO x Colaborador) na barra lateral ---- */
+/* ---- Controles na barra lateral ---- */
 function renderModeControls(){
   const el = document.getElementById('mode-controls');
   if(!el) return;
@@ -763,12 +743,70 @@ function renderModeControls(){
         <div class="cu-name">${escapeHTML(m ? m.nome : 'Colaborador')}</div>
         <div class="cu-role">Modo colaborador</div>
       </div>
-      <button id="exit-colab-btn" style="width:100%">↩ Sair do modo colaborador</button>`;
-    document.getElementById('exit-colab-btn').addEventListener('click', exitColab);
+      <button id="logout-btn-side" style="width:100%">⎋ Sair</button>`;
+    document.getElementById('logout-btn-side').addEventListener('click', logout);
   } else {
-    el.innerHTML = `<button id="enter-colab-btn" style="width:100%;background:var(--accent);color:#fff">👥 Modo colaborador</button>`;
-    document.getElementById('enter-colab-btn').addEventListener('click', ()=>showColabLogin());
+    el.innerHTML = `
+      <div class="current-user-box" style="margin-bottom:8px">
+        <div class="cu-name">Owner / CEO</div>
+        <div class="cu-role">Acesso total</div>
+      </div>
+      <button id="logout-btn-side" style="width:100%">⎋ Sair</button>`;
+    document.getElementById('logout-btn-side').addEventListener('click', logout);
   }
+}
+
+function logout(){
+  authed = false;
+  viewMode = 'owner';
+  colabUserId = '';
+  currentPage = 'dashboard';
+  renderAccessGate();
+}
+
+/* ---- Tela inicial: escolher Owner/CEO ou Colaborador ---- */
+function renderAccessGate(){
+  showOverlay();
+  const root = document.getElementById('auth-root');
+  root.innerHTML = `
+    <div class="auth-screen"><div class="auth-card">
+      <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+      <div class="auth-title">Acessar o CRM</div>
+      <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:18px">Como você quer entrar?</p>
+      <button class="btn btn-primary" id="gate-owner" style="width:100%;justify-content:center;margin-bottom:10px">Owner / CEO</button>
+      <button class="btn btn-secondary" id="gate-colab" style="width:100%;justify-content:center">Colaborador</button>
+    </div></div>`;
+  document.getElementById('gate-owner').addEventListener('click', ()=>renderOwnerLogin());
+  document.getElementById('gate-colab').addEventListener('click', ()=>showColabLogin());
+}
+
+/* ---- Login do Owner/CEO (com senha) ---- */
+function renderOwnerLogin(msg){
+  showOverlay();
+  const root = document.getElementById('auth-root');
+  root.innerHTML = `
+    <div class="auth-screen"><div class="auth-card">
+      <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
+      <div class="auth-title">Entrar como Owner / CEO</div>
+      <div class="field"><label>Código de acesso</label><input id="owner-pwd" type="password" placeholder="Sua senha de owner"></div>
+      <button class="btn btn-primary" id="owner-enter" style="width:100%;justify-content:center">Entrar</button>
+      <div class="error-text" style="text-align:center;min-height:18px">${msg?escapeHTML(msg):''}</div>
+      <button class="btn btn-secondary" id="owner-back" style="width:100%;justify-content:center;margin-top:6px">Voltar</button>
+    </div></div>`;
+  const enter = ()=>{
+    const pwd = val('#owner-pwd');
+    if(pwd !== OWNER_PASSWORD){ renderOwnerLogin('Código incorreto.'); return; }
+    authed = true;
+    viewMode = 'owner';
+    colabUserId = '';
+    currentUserId = localStorage.getItem('eleva_current_user_id') || '';
+    currentPage = 'dashboard';
+    hideOverlay();
+    render();
+  };
+  document.getElementById('owner-enter').addEventListener('click', enter);
+  document.getElementById('owner-pwd').addEventListener('keydown', e=>{ if(e.key==='Enter') enter(); });
+  document.getElementById('owner-back').addEventListener('click', renderAccessGate);
 }
 
 /* ---- Tela de entrada do colaborador (com senha) ---- */
@@ -779,11 +817,11 @@ function showColabLogin(selId, msg){
     root.innerHTML = `
       <div class="auth-screen"><div class="auth-card">
         <div class="auth-logo"><div class="logo-mark">F</div><div class="auth-brand">FALCON <span>COMPANY</span></div></div>
-        <div class="auth-title">Modo colaborador</div>
+        <div class="auth-title">Colaborador</div>
         <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:16px">Ainda não há colaboradores cadastrados. O owner precisa cadastrar a equipe (página "Equipe") e definir a senha de cada um.</p>
-        <button class="btn btn-secondary" id="colab-back" style="width:100%;justify-content:center">Voltar para Owner/CEO</button>
+        <button class="btn btn-secondary" id="colab-back" style="width:100%;justify-content:center">Voltar</button>
       </div></div>`;
-    document.getElementById('colab-back').addEventListener('click', ()=>{ hideOverlay(); render(); });
+    document.getElementById('colab-back').addEventListener('click', renderAccessGate);
     return;
   }
   const sel = selId!==undefined ? selId : colabUserId;
@@ -800,7 +838,7 @@ function showColabLogin(selId, msg){
       <div class="field"><label>Senha</label><input id="colab-pwd" type="password" placeholder="Sua senha"></div>
       <button class="btn btn-primary" id="colab-enter" style="width:100%;justify-content:center">Entrar</button>
       <div class="error-text" style="text-align:center;min-height:18px">${msg?escapeHTML(msg):''}</div>
-      <button class="btn btn-secondary" id="colab-back" style="width:100%;justify-content:center;margin-top:6px">Voltar para Owner/CEO</button>
+      <button class="btn btn-secondary" id="colab-back" style="width:100%;justify-content:center;margin-top:6px">Voltar</button>
     </div></div>`;
   const enter = ()=>{
     const id = val('#colab-select');
@@ -810,24 +848,17 @@ function showColabLogin(selId, msg){
     if(!m){ showColabLogin('', 'Colaborador não encontrado.'); return; }
     if(!m.senha){ showColabLogin(id, 'Esse colaborador ainda não tem senha. Peça ao owner para definir na página Equipe.'); return; }
     if(pwd !== m.senha){ showColabLogin(id, 'Senha incorreta.'); return; }
+    authed = true;
     viewMode = 'colab';
     colabUserId = id;
-    currentUserId = id;            // para as Tarefas mostrarem as dele
+    currentUserId = id;
     currentPage = 'pipeline';
     hideOverlay();
     render();
   };
   document.getElementById('colab-enter').addEventListener('click', enter);
   document.getElementById('colab-pwd').addEventListener('keydown', e=>{ if(e.key==='Enter') enter(); });
-  document.getElementById('colab-back').addEventListener('click', ()=>{ hideOverlay(); render(); });
-}
-
-function exitColab(){
-  viewMode = 'owner';
-  colabUserId = '';
-  currentUserId = localStorage.getItem('eleva_current_user_id') || '';
-  currentPage = 'pipeline';
-  render();
+  document.getElementById('colab-back').addEventListener('click', renderAccessGate);
 }
 
 function renderTopbarActions(){
@@ -847,7 +878,7 @@ function renderTopbarActions(){
     const nc = document.getElementById('new-compromisso-btn');
     if(nc) nc.addEventListener('click', ()=>openCompromissoForm(null));
   } else if(currentPage==='tarefas'){
-    if(getCurrentUser()){
+    if(state.team.length>0){
       el.innerHTML = `<button class="btn btn-primary" id="new-task-btn">+ Nova Tarefa</button>`;
       document.getElementById('new-task-btn').addEventListener('click', ()=>openTaskForm(null));
     } else {
@@ -1839,25 +1870,19 @@ function teamMemberName(id){
 
 function renderTarefas(){
   const content = document.getElementById('page-content');
-  const me = getCurrentUser();
 
   if(state.team.length===0){
     content.innerHTML = `<div class="empty-state"><h3>Cadastre a equipe primeiro</h3><p>Vá em "Equipe" e adicione os membros antes de criar tarefas.</p></div>`;
     return;
   }
 
-  if(!me){
-    content.innerHTML = `<div class="empty-state"><h3>Selecione quem é você</h3><p>No menu lateral, em "Você é", escolha seu nome. Assim o sistema mostra só as tarefas que você criou ou que são suas — ninguém mais vê.</p></div>`;
-    return;
-  }
-
   const visible = isColab()
     ? state.tasks.filter(t=>t.responsavelId===colabUserId || t.criadoPorId===colabUserId)
-    : state.tasks.filter(t=>taskVisibleTo(t, me));
+    : state.tasks;
 
   let html = '';
-  if(!isColab() && me.cargo==='CEO'){
-    html += `<div class="hint-banner">💡 Como CEO, você vê todas as tarefas da equipe. Os demais membros só veem tarefas que criaram ou das quais são responsáveis.</div>`;
+  if(!isColab()){
+    html += `<div class="hint-banner">💡 Como owner, você vê todas as tarefas da equipe.</div>`;
   } else {
     html += `<div class="hint-banner">💡 Aqui aparecem só as tarefas que você criou ou para as quais você é o responsável.</div>`;
   }
@@ -1916,12 +1941,11 @@ function renderTarefas(){
 }
 
 function openTaskForm(id){
-  const me = getCurrentUser();
-  if(!me) return;
+  const meId = isColab() ? colabUserId : (currentUserId || (state.team[0] ? state.team[0].id : ''));
   const task = id ? state.tasks.find(t=>t.id===id) : {
-    id: uid('task'), titulo:'', descricao:'', responsavelId: me.id, leadId:'',
+    id: uid('task'), titulo:'', descricao:'', responsavelId: meId, leadId:'',
     prazo: todayISO(), prioridade:'media', status:'pendente',
-    criadoPorId: me.id, createdAt: new Date().toISOString()
+    criadoPorId: meId, createdAt: new Date().toISOString()
   };
   const leadOptions = [{value:'', label:'Nenhum (tarefa geral)'}].concat(
     state.leads.map(l=>({value:l.id, label:(l.clinica || l.dentista || 'Lead sem nome')}))
@@ -2117,14 +2141,9 @@ function renderDashboard(){
 
   let html = '';
 
-  const me = getCurrentUser();
-  if(me){
-    const minhasTarefas = state.tasks.filter(t=>t.responsavelId===me.id && t.status!=='concluida');
-    if(minhasTarefas.length>0){
-      html += `<div class="hint-banner">💡 Você tem <strong>${minhasTarefas.length}</strong> tarefa(s) pendente(s) atribuída(s) a você. <a href="#" id="dash-go-tasks" style="color:var(--accent-dark);font-weight:800;">Ver tarefas</a></div>`;
-    }
-  } else {
-    html += `<div class="hint-banner">💡 Selecione "Você é" no menu lateral para ver suas tarefas pessoais e liberar a página de Tarefas.</div>`;
+  const pendentesTotal = state.tasks.filter(t=>t.status!=='concluida').length;
+  if(pendentesTotal>0){
+    html += `<div class="hint-banner">💡 A equipe tem <strong>${pendentesTotal}</strong> tarefa(s) pendente(s). <a href="#" id="dash-go-tasks" style="color:var(--accent-dark);font-weight:800;">Ver tarefas</a></div>`;
   }
 
   html += `<div class="section-title" style="margin-top:0">Comercial</div>`;
@@ -2345,15 +2364,10 @@ function gateRender(){
   render();
 }
 
-const logoutBtn = document.getElementById('logout-btn');
-if(logoutBtn) logoutBtn.addEventListener('click', crmLogout);
-
-// Sem login: abre direto no CRM. Dados locais na hora + sync de nuvem em 2º plano.
-crmAuthed = true;
+// Abre na tela de acesso. Dados locais carregam na hora + sync de nuvem em 2º plano.
 loadData();
 dataLoadedOnce = true;
-hideOverlay();
-render();
+renderAccessGate();
 if(firebaseReady && !syncStarted){ startCloudSync(); syncStarted = true; }
 </script>
 </body>
